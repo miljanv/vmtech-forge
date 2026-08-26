@@ -1,0 +1,433 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SalesStatus {
+  PROSPECT
+  RESEARCHING
+  READY_TO_CONTACT
+  EMAIL_SENT
+  FOLLOW_UP
+  REPLIED
+  NEGOTIATION
+  WON
+  LOST
+  ARCHIVED
+}
+
+enum GenerationStatus {
+  IDLE
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum GenerationJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum GenerationStepKey {
+  QUEUED
+  SOURCE_CHECK
+  PAGE_COLLECTION
+  FACT_EXTRACTION
+  IMAGE_DOWNLOAD
+  BRAND_ANALYSIS
+  DESIGN_PLANNING
+  CONTENT_GENERATION
+  SITE_CREATION
+  QUALITY_CHECK
+  READY
+}
+
+enum GenerationStepStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+}
+
+enum SourceType {
+  WEBSITE
+  INSTAGRAM
+  FACEBOOK
+  GOOGLE_MAPS
+  MARKETPLACE
+  OTHER
+}
+
+enum CrawlStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  BLOCKED
+}
+
+enum AssetType {
+  LOGO
+  FAVICON
+  HERO
+  PRODUCT
+  PROCESS
+  LOCATION
+  TEAM
+  GALLERY
+  OTHER
+}
+
+enum SiteVisibility {
+  UNLISTED
+  PRIVATE_DRAFT
+  PUBLIC
+}
+
+enum SiteVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum FollowUpStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum EmailDraftStatus {
+  DRAFT
+  SENT
+}
+
+enum GenerationProvider {
+  OPENAI
+  MOCK
+}
+
+enum SalesActivityType {
+  STATUS_CHANGE
+  NOTE
+  EMAIL_CREATED
+  EMAIL_SENT
+  FOLLOW_UP_SCHEDULED
+  FOLLOW_UP_COMPLETED
+  GENERATION_STARTED
+  GENERATION_COMPLETED
+  GENERATION_FAILED
+  VERSION_PUBLISHED
+  VERSION_RESTORED
+  COMPANY_CREATED
+  COMPANY_UPDATED
+  COMPANY_ARCHIVED
+}
+
+model Company {
+  id                String           @id @default(uuid())
+  name              String?
+  slug              String           @unique
+  salesStatus       SalesStatus      @default(PROSPECT)
+  generationStatus  GenerationStatus @default(IDLE)
+  dealValueMinor    Int              @default(12000)
+  currency          String           @default("EUR")
+  contactName       String?
+  contactEmail      String?
+  contactPhone      String?
+  notes             String?
+  preferredLanguage String           @default("sr-Latn")
+  preferredCta      String?
+  designNotes       String?
+  contentNotes      String?
+  businessFacts     Json?
+  lastContactAt     DateTime?
+  nextFollowUpAt    DateTime?
+  createdBy         String
+  updatedBy         String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  archivedAt        DateTime?
+
+  contacts       CompanyContact[]
+  sources        Source[]
+  facts          ExtractedFact[]
+  assets         Asset[]
+  site           Site?
+  generationJobs GenerationJob[]
+  activities     SalesActivity[]
+  followUps      FollowUp[]
+  emailDrafts    EmailDraft[]
+
+  @@index([salesStatus])
+  @@index([generationStatus])
+  @@index([archivedAt])
+  @@index([nextFollowUpAt])
+  @@index([createdAt])
+}
+
+model CompanyContact {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String?
+  email     String?
+  phone     String?
+  role      String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model Source {
+  id               String      @id @default(uuid())
+  companyId        String
+  url              String
+  sourceType       SourceType  @default(WEBSITE)
+  crawlStatus      CrawlStatus @default(PENDING)
+  contentHash      String?
+  sanitizedContent String?
+  metadata         Json?
+  lastCrawledAt    DateTime?
+  error            String?
+  httpStatus       Int?
+  pageTitle        String?
+  robotsAllowed    Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, url])
+  @@index([companyId, crawlStatus])
+}
+
+model ExtractedFact {
+  id         String   @id @default(uuid())
+  companyId  String
+  key        String
+  value      Json
+  sourceUrl  String?
+  confidence Float?
+  warning    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, key])
+}
+
+model Asset {
+  id             String    @id @default(uuid())
+  companyId      String
+  type           AssetType @default(OTHER)
+  sourceUrl      String?
+  storageKey     String
+  publicUrl      String
+  mimeType       String
+  width          Int?
+  height         Int?
+  fileSize       Int?
+  contentHash    String
+  dominantColors Json?
+  approved       Boolean   @default(true)
+  excluded       Boolean   @default(false)
+  attribution    String?
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, contentHash])
+  @@index([companyId, type])
+  @@index([approved, excluded])
+}
+
+model Site {
+  id                 String         @id @default(uuid())
+  companyId          String         @unique
+  slug               String         @unique
+  visibility         SiteVisibility @default(UNLISTED)
+  demoMode           Boolean        @default(true)
+  publishedVersionId String?        @unique
+  customDomain       String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  publishedVersion SiteVersion?  @relation("PublishedVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
+  versions         SiteVersion[]
+  visits           PreviewVisit[]
+
+  @@index([slug])
+}
+
+model SiteVersion {
+  id                String            @id @default(uuid())
+  siteId            String
+  versionNumber     Int
+  status            SiteVersionStatus @default(DRAFT)
+  siteSpec          Json
+  designFingerprint Json
+  similarityScore   Float?
+  createdBy         String
+  generationJobId   String?
+  createdAt         DateTime          @default(now())
+  publishedAt       DateTime?
+
+  site          Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  publishedFor  Site?          @relation("PublishedVersion")
+  generationJob GenerationJob? @relation(fields: [generationJobId], references: [id], onDelete: SetNull)
+
+  @@unique([siteId, versionNumber])
+  @@index([siteId, status])
+  @@index([generationJobId])
+}
+
+model GenerationJob {
+  id              String              @id @default(uuid())
+  companyId       String
+  siteId          String?
+  provider        GenerationProvider  @default(MOCK)
+  extractorModel  String
+  designerModel   String
+  status          GenerationJobStatus @default(QUEUED)
+  progress        Int                 @default(0)
+  currentStep     GenerationStepKey   @default(QUEUED)
+  inputTokens     Int                 @default(0)
+  outputTokens    Int                 @default(0)
+  requestIds      Json?
+  error           String?
+  retryCount      Int                 @default(0)
+  idempotencyKey  String              @unique
+  triggerRunId    String?
+  cancelRequested Boolean             @default(false)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdBy       String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  company Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  steps   GenerationStep[]
+  versions SiteVersion[]
+
+  @@index([companyId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model GenerationStep {
+  id           String               @id @default(uuid())
+  jobId        String
+  key          GenerationStepKey
+  label        String
+  description  String
+  status       GenerationStepStatus @default(PENDING)
+  progress     Int                  @default(0)
+  attempt      Int                  @default(0)
+  error        String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  job GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, key])
+  @@index([jobId, status])
+}
+
+model SalesActivity {
+  id         String            @id @default(uuid())
+  companyId  String
+  type       SalesActivityType
+  fromStatus SalesStatus?
+  toStatus   SalesStatus?
+  message    String
+  metadata   Json?
+  createdBy  String
+  createdAt  DateTime          @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+}
+
+model FollowUp {
+  id          String         @id @default(uuid())
+  companyId   String
+  dueAt       DateTime
+  note        String?
+  status      FollowUpStatus @default(SCHEDULED)
+  completedAt DateTime?
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status, dueAt])
+  @@index([dueAt, status])
+}
+
+model EmailDraft {
+  id        String           @id @default(uuid())
+  companyId String
+  subject   String
+  body      String
+  status    EmailDraftStatus @default(DRAFT)
+  sentAt    DateTime?
+  createdBy String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+}
+
+model PreviewVisit {
+  id              String   @id @default(uuid())
+  siteId          String
+  sessionHash     String
+  referrerHost    String?
+  userAgentFamily String?
+  path            String
+  viewedAt        DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, viewedAt])
+  @@index([siteId, sessionHash])
+}
+
+model AppSettings {
+  id                     String   @id @default("default")
+  defaultDealValueMinor  Int      @default(12000)
+  currency               String   @default("EUR")
+  demoBadgeEnabled       Boolean  @default(true)
+  similarityThreshold    Float    @default(0.72)
+  extractorModel         String?
+  designerModel          String?
+  tokenPricing           Json?
+  followUpBusinessDays   Int      @default(3)
+  maxCrawlPages          Int      @default(12)
+  showDemoBadgeAfterSale Boolean  @default(false)
+  updatedAt              DateTime @updatedAt
+  updatedBy              String?
+}
