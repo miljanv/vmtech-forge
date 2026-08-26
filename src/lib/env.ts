@@ -45,25 +45,6 @@ export type AppEnv = z.infer<typeof envSchema> & {
 
 let cached: AppEnv | null = null;
 
-function parseDemoMode(
-  parsed: z.infer<typeof envSchema>,
-): boolean {
-  if (parsed.STUDIOFORGE_DEMO_MODE) {
-    return true;
-  }
-  if (parsed.NODE_ENV === "test") {
-    return true;
-  }
-  if (
-    parsed.NODE_ENV !== "production" &&
-    !parsed.CLERK_SECRET_KEY &&
-    !parsed.OPENAI_API_KEY
-  ) {
-    return true;
-  }
-  return false;
-}
-
 export function getEnv(): AppEnv {
   if (cached) {
     return cached;
@@ -97,29 +78,14 @@ export function getEnv(): AppEnv {
     PREVIEW_SESSION_SALT: process.env.PREVIEW_SESSION_SALT,
   });
 
-  const demoMode = parseDemoMode(parsed);
-  const clerkEnabled = Boolean(
-    parsed.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && parsed.CLERK_SECRET_KEY,
-  );
+  const demoMode = true;
+  const clerkEnabled = false;
   const r2Enabled = Boolean(
     parsed.R2_ACCOUNT_ID &&
       parsed.R2_ACCESS_KEY_ID &&
       parsed.R2_SECRET_ACCESS_KEY &&
       parsed.R2_BUCKET_NAME,
   );
-
-  const duringBuild = Boolean(process.env.NEXT_PHASE);
-  if (parsed.NODE_ENV === "production" && !demoMode && !duringBuild) {
-    if (!parsed.DATABASE_URL) {
-      throw new Error("DATABASE_URL is required in production.");
-    }
-    if (!clerkEnabled) {
-      throw new Error("Clerk keys are required in production.");
-    }
-    if (!parsed.ADMIN_EMAILS) {
-      throw new Error("ADMIN_EMAILS is required in production.");
-    }
-  }
 
   cached = {
     ...parsed,

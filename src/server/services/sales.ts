@@ -1,4 +1,4 @@
-import { prisma } from "@/server/db";
+import { prisma, hasDatabase } from "@/server/db";
 import { NotFoundError, AppError } from "@/lib/errors";
 import {
   canTransition,
@@ -100,6 +100,9 @@ export async function scheduleFollowUp(options: {
 }
 
 export async function getPipeline() {
+  if (!hasDatabase()) {
+    return { companies: [], counts: {} as Record<string, number> };
+  }
   const companies = await prisma.company.findMany({
     where: { archivedAt: null },
     include: { site: true },

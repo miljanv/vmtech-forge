@@ -4,7 +4,7 @@ import { GENERATION_STEPS } from "@/lib/generation/steps";
 import { detectSourceType, type CompanyWizardInput } from "@/lib/validation/company";
 import { validateSlug } from "@/lib/validation/slug";
 import { AppError, NotFoundError } from "@/lib/errors";
-import { prisma } from "@/server/db";
+import { prisma, hasDatabase } from "@/server/db";
 import { dispatchGeneration } from "@/server/generation/dispatch";
 import type { AdminUser } from "@/lib/auth/constants";
 import { getEnv } from "@/lib/env";
@@ -13,6 +13,7 @@ export async function listCompanies(options: {
   query?: string;
   includeArchived?: boolean;
 }) {
+  if (!hasDatabase()) return [];
   return prisma.company.findMany({
     where: {
       archivedAt: options.includeArchived ? undefined : null,
@@ -39,6 +40,9 @@ export async function listCompanies(options: {
 }
 
 export async function getCompany(id: string) {
+  if (!hasDatabase()) {
+    throw new NotFoundError("Firma nije pronađena.");
+  }
   const company = await prisma.company.findUnique({
     where: { id },
     include: {

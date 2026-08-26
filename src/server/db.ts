@@ -18,6 +18,10 @@ export class DatabaseUnavailableError extends AppError {
   }
 }
 
+export function hasDatabase(): boolean {
+  return Boolean(getEnv().DATABASE_URL);
+}
+
 function createClient(): PrismaClient {
   const env = getEnv();
   const connectionString = env.DATABASE_URL;

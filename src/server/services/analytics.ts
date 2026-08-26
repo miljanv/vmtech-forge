@@ -1,7 +1,33 @@
-import { prisma } from "@/server/db";
+import { prisma, hasDatabase } from "@/server/db";
 import { SALES_STATUSES } from "@/lib/sales/status";
 
 export async function getDashboardData() {
+  if (!hasDatabase()) {
+    const byStatus = Object.fromEntries(
+      SALES_STATUSES.map((status) => [status, 0]),
+    ) as Record<(typeof SALES_STATUSES)[number], number>;
+    return {
+      totals: {
+        sites: 0,
+        ready: 0,
+        emailed: 0,
+        replied: 0,
+        negotiation: 0,
+        won: 0,
+        lost: 0,
+        replyRate: 0,
+        winRate: 0,
+        wonValue: 0,
+        pipelineValue: 0,
+        activeGenerations: 0,
+        previewVisits: 0,
+      },
+      byStatus,
+      jobs: [],
+      followUps: [],
+      activities: [],
+    };
+  }
   const [companies, jobs, followUps, activities, visits] = await Promise.all([
     prisma.company.findMany({ where: { archivedAt: null } }),
     prisma.generationJob.findMany({
@@ -78,12 +104,21 @@ export async function recordPreviewVisit(options: {
   referrerHost: string | null;
   userAgentFamily: string | null;
 }) {
+  if (!hasDatabase()) return;
   await prisma.previewVisit.create({
     data: options,
   });
 }
 
 export async function getPreviewStats(siteId: string) {
+  if (!hasDatabase()) {
+    return {
+      views: 0,
+      uniqueSessions: 0,
+      lastViewedAt: null,
+      referrers: [] as (string | null)[],
+    };
+  }
   const visits = await prisma.previewVisit.findMany({
     where: { siteId },
     orderBy: { viewedAt: "desc" },

@@ -1,5 +1,3 @@
-import { getEnv } from "@/lib/env";
-
 export type AdminUser = {
   id: string;
   email: string;
@@ -13,5 +11,5 @@ export const DEMO_ADMIN: AdminUser = {
 };
 
 export function isDemoAuthEnabled(): boolean {
-  return getEnv().demoMode || !getEnv().clerkEnabled;
+  return true;
 }

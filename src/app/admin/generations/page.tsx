@@ -1,15 +1,17 @@
-import { prisma } from "@/server/db";
+import { prisma, hasDatabase } from "@/server/db";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
 export default async function GenerationsPage() {
-  const jobs = await prisma.generationJob.findMany({
-    include: { company: true, steps: true },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  const jobs = hasDatabase()
+    ? await prisma.generationJob.findMany({
+        include: { company: true, steps: true },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      })
+    : [];
 
   return (
     <div className="space-y-6">

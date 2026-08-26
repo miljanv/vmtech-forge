@@ -131,7 +131,7 @@ pnpm trigger:dev
 
 ## Security notes
 
-- `/admin` and mutation endpoints require an allow-listed Clerk user (or explicit demo mode).
+- `/admin` is currently open without login so the studio can be reviewed. Add Clerk back before sharing the URL widely.
 - Scraped HTML is never executed or rendered raw.
 - SVG files with scripts or external references are rejected.
 - Generation endpoints are rate-limited.

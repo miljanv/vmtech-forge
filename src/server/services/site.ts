@@ -1,4 +1,4 @@
-import { prisma } from "@/server/db";
+import { prisma, hasDatabase } from "@/server/db";
 import { NotFoundError } from "@/lib/errors";
 import type { AdminUser } from "@/lib/auth/constants";
 import type { Prisma } from "@/generated/prisma";
@@ -107,6 +107,7 @@ export async function saveEditedSpec(options: {
 }
 
 export async function getPublicSite(slug: string) {
+  if (!hasDatabase()) return null;
   return prisma.site.findUnique({
     where: { slug },
     include: {

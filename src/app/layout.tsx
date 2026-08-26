@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Figtree, Geist_Mono } from "next/font/google";
 import { RootProviders } from "@/components/admin/root-providers";
-import { getEnv } from "@/lib/env";
 import "./globals.css";
 
 const heading = Fraunces({
@@ -30,7 +29,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const env = getEnv();
   return (
     <html
       lang="sr-Latn"
@@ -38,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="studio-grain min-h-full bg-background text-foreground">
-        <RootProviders clerkEnabled={env.clerkEnabled}>{children}</RootProviders>
+        <RootProviders>{children}</RootProviders>
       </body>
     </html>
   );

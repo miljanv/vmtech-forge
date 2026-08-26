@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { DatabaseSetupScreen } from "@/components/admin/database-setup-screen";
 import { getEnv } from "@/lib/env";
 import { getAdminUser } from "@/server/auth";
 
@@ -12,11 +10,16 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const admin = await getAdminUser();
-  if (!admin) {
-    redirect("/login");
-  }
-  if (!getEnv().DATABASE_URL) {
-    return <DatabaseSetupScreen />;
-  }
-  return <AdminShell adminName={admin.name}>{children}</AdminShell>;
+  return (
+    <AdminShell adminName={admin?.name ?? "Studio vlasnik"}>
+      {!getEnv().DATABASE_URL ? (
+        <div className="mb-6 rounded-2xl border border-dashed border-border p-4 text-sm leading-6 text-muted-foreground">
+          Baza još nije povezana. Panel možeš da pregledaš, ali firme, pipeline i
+          generisanja ostaju prazni dok u Vercel ne dodaš{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5">DATABASE_URL</code>.
+        </div>
+      ) : null}
+      {children}
+    </AdminShell>
+  );
 }
