@@ -1,5 +1,7 @@
 import { CompanyWizard } from "@/components/admin/company-wizard";
 
+export const maxDuration = 300;
+
 export default function NewCompanyPage() {
   return (
     <div className="space-y-6">

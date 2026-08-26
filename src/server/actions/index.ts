@@ -22,8 +22,6 @@ import { getAIProvider } from "@/lib/ai";
 import { prisma } from "@/server/db";
 import { businessFactsSchema } from "@/lib/facts/schema";
 
-export const maxDuration = 300;
-
 async function guarded<T>(fn: () => Promise<T>) {
   try {
     const data = await fn();
