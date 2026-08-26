@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { SiteSection } from "@/lib/site-spec/schema";
 import { SiteImage } from "@/components/site-renderer/site-image";
+import { HeroCarousel } from "@/components/site-renderer/hero-carousel";
+import { GalleryFilmstrip } from "@/components/site-renderer/gallery-filmstrip";
 
 export function SectionView({
   section,
@@ -11,7 +13,10 @@ export function SectionView({
   assetMap: Map<string, string>;
   slug: string;
 }) {
-  const image = section.assetIds.map((id) => assetMap.get(id)).find(Boolean);
+  const images = section.assetIds
+    .map((id) => assetMap.get(id))
+    .filter((value): value is string => Boolean(value));
+  const image = images[0];
   const href = (value: string | null) => {
     if (!value) return undefined;
     if (value.startsWith("/")) return `/${slug}${value === "/" ? "" : value}`;
@@ -19,7 +24,7 @@ export function SectionView({
   };
 
   if (section.type === "hero") {
-    return <Hero section={section} image={image} href={href} />;
+    return <Hero section={section} images={images} image={image} href={href} />;
   }
   if (section.type === "products") {
     return <Products section={section} assetMap={assetMap} href={href} />;
@@ -108,10 +113,12 @@ function CtaLink({
 
 function Hero({
   section,
+  images,
   image,
   href,
 }: {
   section: SiteSection;
+  images: string[];
   image?: string;
   href: (value: string | null) => string | undefined;
 }) {
@@ -122,30 +129,31 @@ function Hero({
     </CtaLink>
   );
   const seed = section.content.heading ?? "hero";
+  const copy = (
+    <>
+      <p className="text-[11px] tracking-[0.42em] uppercase opacity-80">
+        {section.content.eyebrow}
+      </p>
+      <h1 className="font-heading mt-6 max-w-4xl text-5xl leading-[0.92] md:text-8xl">
+        {section.content.heading}
+      </h1>
+      <p className="mt-7 max-w-xl text-lg leading-8 text-white/78 md:text-xl">
+        {section.content.body}
+      </p>
+      <div className="mt-10">{cta}</div>
+    </>
+  );
 
-  if (variant === "cinematic" || variant === "layered-collage" || variant === "story-first") {
+  if (
+    variant === "cinematic" ||
+    variant === "layered-collage" ||
+    variant === "story-first" ||
+    variant === "minimal-centered"
+  ) {
     return (
-      <section className="relative min-h-[88vh] overflow-hidden">
-        <SiteImage
-          src={image}
-          alt={section.content.heading ?? ""}
-          seed={seed}
-          className="absolute inset-0 size-full"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/15" />
-        <div className="relative mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-end px-4 py-20 text-white">
-          <p className="text-xs tracking-[0.32em] uppercase opacity-80">
-            {section.content.eyebrow}
-          </p>
-          <h1 className="font-heading mt-5 max-w-4xl text-5xl leading-[0.95] md:text-8xl">
-            {section.content.heading}
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-white/80">
-            {section.content.body}
-          </p>
-          <div className="mt-10">{cta}</div>
-        </div>
-      </section>
+      <HeroCarousel images={images} alt={section.content.heading ?? ""}>
+        {copy}
+      </HeroCarousel>
     );
   }
 
@@ -168,12 +176,22 @@ function Hero({
           </p>
           <div className="mt-8">{cta}</div>
         </div>
-        <SiteImage
-          src={image}
-          alt={section.content.heading ?? ""}
-          seed={seed}
-          className="aspect-[4/5] w-full rounded-[calc(var(--site-radius)+1rem)]"
-        />
+        <div className="relative">
+          <SiteImage
+            src={image}
+            alt={section.content.heading ?? ""}
+            seed={seed}
+            className="aspect-[4/5] w-full rounded-[calc(var(--site-radius)+1rem)]"
+          />
+          {images[1] ? (
+            <SiteImage
+              src={images[1]}
+              alt=""
+              seed={`${seed}-2`}
+              className="absolute -right-6 -bottom-8 hidden aspect-[3/4] w-2/5 rounded-[calc(var(--site-radius)+0.75rem)] border-[6px] border-[var(--site-bg)] md:block"
+            />
+          ) : null}
+        </div>
       </section>
     );
   }
@@ -234,13 +252,13 @@ function Products({
           return (
             <article
               key={item.title}
-              className="mb-5 break-inside-avoid overflow-hidden rounded-[calc(var(--site-radius)+0.75rem)] bg-[var(--site-surface)] shadow-[0_24px_60px_-36px_rgba(0,0,0,0.5)]"
+              className="group mb-5 break-inside-avoid overflow-hidden rounded-[calc(var(--site-radius)+0.75rem)] bg-[var(--site-surface)] shadow-[0_24px_60px_-36px_rgba(0,0,0,0.5)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]"
             >
               <SiteImage
                 src={src}
                 alt={item.title}
                 seed={item.title}
-                className="aspect-[4/3] w-full"
+                className="aspect-[4/5] w-full transition duration-700 group-hover:scale-[1.03]"
               />
               <div className="p-5">
                 <h3 className="text-xl tracking-tight">{item.title}</h3>
@@ -323,20 +341,23 @@ function Gallery({
 }) {
   const urls = section.assetIds
     .map((id) => assetMap.get(id))
-    .filter(Boolean) as string[];
-  const frames = urls.length > 0 ? urls : section.assetIds.map((id) => id);
+    .filter((value): value is string => Boolean(value));
+  if (section.variant === "filmstrip" || section.variant === "full-carousel") {
+    return <GalleryFilmstrip images={urls} heading={section.content.heading ?? "Galerija"} />;
+  }
+  const frames = urls.length > 0 ? urls : ["a", "b", "c"];
   return (
-    <section className="px-4 py-20">
+    <section className="px-4 py-20 md:py-28">
       <div className="mx-auto max-w-6xl">
-        <h2 className="font-heading text-4xl md:text-5xl">{section.content.heading}</h2>
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          {(frames.length ? frames : ["a", "b", "c"]).map((url, index) => (
+        <h2 className="font-heading text-4xl md:text-6xl">{section.content.heading}</h2>
+        <div className="mt-12 columns-1 gap-4 md:columns-2 lg:columns-3">
+          {frames.map((url, index) => (
             <SiteImage
               key={`${url}-${index}`}
               src={urls[index]}
               alt=""
               seed={`${section.content.heading}-${index}`}
-              className={`w-full ${index === 0 ? "md:col-span-2 aspect-[16/10]" : "aspect-[4/5]"}`}
+              className={`mb-4 w-full ${index % 3 === 0 ? "aspect-[16/10]" : "aspect-[4/5]"}`}
             />
           ))}
         </div>

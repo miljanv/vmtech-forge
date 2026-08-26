@@ -1,5 +1,6 @@
 import type { BusinessFacts } from "@/lib/facts/schema";
 import type { DesignFingerprint, DesignProfile, SiteSpec } from "@/lib/site-spec/schema";
+import type { ImageReview, ImageReviewInput } from "@/lib/assets/review-schema";
 
 export type ExtractionInput = {
   companyName?: string | null;
@@ -21,6 +22,12 @@ export type SitePlanInput = {
   designNotes?: string | null;
   contentNotes?: string | null;
   assetIds: string[];
+  assets?: Array<{
+    id: string;
+    type: string;
+    kind: string;
+    sourceUrl: string | null;
+  }>;
   recentFingerprints: DesignFingerprint[];
 };
 
@@ -39,6 +46,7 @@ export interface AIProvider {
   readonly name: "openai" | "mock";
   extractFacts(input: ExtractionInput): Promise<StructuredResult<BusinessFacts>>;
   analyzeBrand(input: DesignInput): Promise<StructuredResult<DesignProfile>>;
+  reviewImages(input: ImageReviewInput): Promise<StructuredResult<ImageReview>>;
   planSite(input: SitePlanInput): Promise<StructuredResult<SiteSpec>>;
   regenerateSection(input: {
     spec: SiteSpec;

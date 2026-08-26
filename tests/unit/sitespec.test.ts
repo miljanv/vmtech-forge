@@ -71,7 +71,8 @@ describe("SiteSpec validation", () => {
     const repairedHero = repaired.pages[0]?.sections[0];
     expect(repairedHero?.variant).not.toBe("not-a-real-variant");
     expect(repairedHero?.content.heading).toBeTruthy();
-    expect(repairedHero?.assetIds).toEqual([]);
+    expect(repairedHero?.assetIds).not.toContain("stolen-asset");
+    expect(repairedHero?.assetIds).toContain("asset-1");
     expect(repairedHero?.content.ctaHref).toBe("/gde-kupiti");
   });
 });

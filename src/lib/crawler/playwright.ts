@@ -39,6 +39,7 @@ export class PlaywrightCrawlerProvider implements CrawlerProvider {
           text: htmlToPlainText(html),
           htmlHash: hashBuffer(html),
           imageUrls: [],
+          imageCandidates: [],
           logoUrl: null,
           faviconUrl: null,
           status: response?.status() ?? 200,

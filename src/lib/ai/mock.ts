@@ -1,5 +1,6 @@
 import { emptyBusinessFacts, type BusinessFacts } from "@/lib/facts/schema";
 import { normalizeFacts } from "@/lib/facts/normalize";
+import type { ImageReview, ImageReviewInput } from "@/lib/assets/review-schema";
 import type {
   AIProvider,
   DesignInput,
@@ -29,12 +30,6 @@ export class MockAIProvider implements AIProvider {
       "newsreader-source",
       "cormorant-karla",
       "dm",
-    ] as const;
-    const heroes = [
-      "cinematic",
-      "editorial-split",
-      "story-first",
-      "asymmetric-product",
     ] as const;
     const name = input.facts.businessName ?? "studio";
     const profile: DesignProfile = {
@@ -70,16 +65,30 @@ export class MockAIProvider implements AIProvider {
         "Stock handshake photos",
         "Welcome to our website",
       ],
-      navigationStyle: "solid-editorial",
+      navigationStyle: "transparent-overlay",
       buttonStyle: "solid-pill",
-      heroVariant: heroes[hash % heroes.length] ?? "cinematic",
+      heroVariant: "cinematic",
       productVariant: "editorial-grid",
       storyVariant: "magazine",
-      galleryVariant: "offset-editorial",
+      galleryVariant: "full-carousel",
       processVariant: "horizontal-steps",
       contactVariant: "split-location",
     };
     return { data: profile, usage: noUsage };
+  }
+
+  async reviewImages(input: ImageReviewInput): Promise<StructuredResult<ImageReview>> {
+    return {
+      data: {
+        decisions: input.images.map((image, index) => ({
+          index: image.index,
+          keep: true,
+          kind: index === 0 ? "hero" : "product",
+          reason: "mock",
+        })),
+      },
+      usage: noUsage,
+    };
   }
 
   async planSite(input: SitePlanInput): Promise<StructuredResult<SiteSpec>> {

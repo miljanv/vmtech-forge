@@ -127,7 +127,7 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
               ctaHref: "/kontakt",
               items: [],
             },
-            assetIds: assetId ? [assetId] : [],
+            assetIds: input.assetIds.slice(0, 8),
             layout: { fullBleed: true, inverted: false },
           },
           {

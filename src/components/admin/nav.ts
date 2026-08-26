@@ -3,6 +3,7 @@ import {
   Building2,
   Kanban,
   Sparkles,
+  ChartColumn,
   Settings,
 } from "lucide-react";
 
@@ -11,5 +12,6 @@ export const ADMIN_NAV = [
   { href: "/admin/companies", label: "Firme i sajtovi", icon: Building2 },
   { href: "/admin/pipeline", label: "Prodajni proces", icon: Kanban },
   { href: "/admin/generations", label: "Generisanja", icon: Sparkles },
+  { href: "/admin/analytics", label: "Analitika", icon: ChartColumn },
   { href: "/admin/settings", label: "Podešavanja", icon: Settings },
 ] as const;

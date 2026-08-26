@@ -1,3 +1,4 @@
+import { extractImageCandidates } from "@/lib/assets/candidates";
 import { load } from "cheerio";
 import { htmlToPlainText, sanitizeSourceText } from "@/lib/security/sanitize";
 import { assertPublicHttpUrl } from "@/lib/security/ssrf";
@@ -42,21 +43,6 @@ async function robotsAllows(origin: string, pathname: string): Promise<boolean> 
   } catch {
     return true;
   }
-}
-
-function extractImages(html: string, baseUrl: string): string[] {
-  const $ = load(html);
-  const urls = new Set<string>();
-  $("img").each((_, el) => {
-    const src = $(el).attr("src") || $(el).attr("data-src");
-    if (!src) return;
-    try {
-      urls.add(new URL(src, baseUrl).toString());
-    } catch {
-      // ignore invalid
-    }
-  });
-  return [...urls];
 }
 
 function extractLogo(html: string, baseUrl: string): string | null {
@@ -111,7 +97,8 @@ export class NativeCrawlerProvider implements CrawlerProvider {
           $("main").text() || $("article").text() || $("body").text(),
         );
         const text = htmlToPlainText(html);
-        const imageUrls = extractImages(html, response.url);
+        const imageCandidates = extractImageCandidates(html, response.url);
+        const imageUrls = imageCandidates.map((item) => item.url);
         const logoUrl = extractLogo(html, response.url);
         const faviconHref =
           $('link[rel="icon"]').attr("href") ||
@@ -127,6 +114,7 @@ export class NativeCrawlerProvider implements CrawlerProvider {
           text,
           htmlHash: hashBuffer(response.body),
           imageUrls,
+          imageCandidates,
           logoUrl,
           faviconUrl,
           status: response.status,

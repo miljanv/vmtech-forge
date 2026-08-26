@@ -8,6 +8,7 @@ import { normalizeFacts } from "@/lib/facts/normalize";
 import {
   DESIGN_SYSTEM_PROMPT,
   EXTRACTION_SYSTEM_PROMPT,
+  IMAGE_REVIEW_PROMPT,
   SITE_SYSTEM_PROMPT,
 } from "@/lib/ai/prompts";
 import { stripUnsupportedJsonSchemaFormats } from "@/lib/ai/structured-schema";
@@ -18,6 +19,7 @@ import type {
   SitePlanInput,
   StructuredResult,
 } from "@/lib/ai/types";
+import { imageReviewSchema, type ImageReview, type ImageReviewInput } from "@/lib/assets/review-schema";
 import {
   designProfileSchema,
   siteSpecSchema,
@@ -68,7 +70,7 @@ function textFormat(schema: Parameters<typeof zodTextFormat>[0], name: string) {
 
 async function parseResponse(options: {
   model: string;
-  input: Array<{ role: "system" | "user"; content: string }>;
+  input: Parameters<OpenAI["responses"]["parse"]>[0]["input"];
   format: ReturnType<typeof zodTextFormat>;
 }) {
   const env = getEnv();
@@ -158,6 +160,52 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
+  async reviewImages(input: ImageReviewInput): Promise<StructuredResult<ImageReview>> {
+    if (input.images.length === 0) {
+      return { data: { decisions: [] }, usage: { inputTokens: 0, outputTokens: 0 } };
+    }
+    const env = getEnv();
+    const photos = input.images.slice(0, 8);
+    try {
+      const response = await parseResponse({
+        model: env.OPENAI_MODEL_EXTRACTOR,
+        input: [
+          { role: "system", content: IMAGE_REVIEW_PROMPT },
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: JSON.stringify({
+                  businessName: input.businessName,
+                  description: input.description,
+                  products: input.products,
+                  images: photos.map(({ imageBase64: _image, ...meta }) => meta),
+                }),
+              },
+              ...photos.map((photo) => ({
+                type: "input_image" as const,
+                image_url: `data:image/jpeg;base64,${photo.imageBase64}`,
+                detail: "low" as const,
+              })),
+            ],
+          },
+        ],
+        format: textFormat(imageReviewSchema, "image_review"),
+      });
+      if (!response.output_parsed) {
+        throw new Error("Image reviewer returned no structured output.");
+      }
+      return {
+        data: imageReviewSchema.parse(response.output_parsed),
+        usage: usageFrom(response),
+      };
+    } catch (error) {
+      console.error("[ai.reviewImages]", error);
+      throw openaiFailed(error);
+    }
+  }
+
   async planSite(input: SitePlanInput): Promise<StructuredResult<SiteSpec>> {
     const env = getEnv();
     try {
@@ -175,6 +223,7 @@ export class OpenAIProvider implements AIProvider {
               designNotes: input.designNotes,
               contentNotes: input.contentNotes,
               assetIds: input.assetIds,
+              assets: input.assets,
               recentFingerprints: input.recentFingerprints,
             }),
           },

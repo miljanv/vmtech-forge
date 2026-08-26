@@ -1,3 +1,5 @@
+import type { ImageCandidate } from "@/lib/assets/candidates";
+
 export type CrawledPage = {
   url: string;
   finalUrl: string;
@@ -6,6 +8,7 @@ export type CrawledPage = {
   text: string;
   htmlHash: string;
   imageUrls: string[];
+  imageCandidates: ImageCandidate[];
   logoUrl: string | null;
   faviconUrl: string | null;
   status: number;

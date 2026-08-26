@@ -11,6 +11,7 @@ export const RESERVED_SLUGS = new Set([
   "companies",
   "pipeline",
   "generations",
+  "analytics",
   "media",
   "static",
   "health",

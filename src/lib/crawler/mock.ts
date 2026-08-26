@@ -24,6 +24,7 @@ export class MockCrawlerProvider implements CrawlerProvider {
       text: MOCK_COPY,
       htmlHash: hashBuffer(`${url}:${MOCK_COPY}`),
       imageUrls: [],
+      imageCandidates: [],
       logoUrl: null,
       faviconUrl: null,
       status: 200,

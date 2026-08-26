@@ -8,12 +8,15 @@ export function generationCostEur(inputTokens: number, outputTokens: number) {
   );
 }
 
-export function formatGenerationCost(inputTokens: number, outputTokens: number) {
-  const eur = generationCostEur(inputTokens, outputTokens);
+export function formatEur(amount: number) {
   return new Intl.NumberFormat("sr-Latn", {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 4,
-  }).format(eur);
+  }).format(amount);
+}
+
+export function formatGenerationCost(inputTokens: number, outputTokens: number) {
+  return formatEur(generationCostEur(inputTokens, outputTokens));
 }

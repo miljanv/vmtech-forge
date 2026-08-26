@@ -4,6 +4,7 @@ import type { SiteSpec } from "@/lib/site-spec/schema";
 import { siteSpecSchema } from "@/lib/site-spec/schema";
 import { getFontPairing } from "@/lib/site-spec/variants";
 import { collectSiteSpecIssues, repairSiteSpec } from "@/lib/site-spec/repair";
+import { polishSiteNavigation } from "@/lib/site-spec/navigation";
 
 export function validateSiteSpec(
   input: unknown,
@@ -11,7 +12,10 @@ export function validateSiteSpec(
 ): SiteSpec {
   const spec = options?.repair === false
     ? siteSpecSchema.parse(input)
-    : repairSiteSpec(input, options);
+    : polishSiteNavigation(
+        repairSiteSpec(input, options),
+        options?.allowedAssetIds ? [...options.allowedAssetIds] : undefined,
+      );
   const errors: string[] = [];
 
   if (!getFontPairing(spec.theme.fontPairingId)) {

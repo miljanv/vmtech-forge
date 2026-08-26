@@ -4,6 +4,7 @@ import { getCrawlerProvider } from "@/lib/crawler";
 import { wrapUntrustedSource } from "@/lib/security/sanitize";
 import { assertPublicHttpUrl } from "@/lib/security/ssrf";
 import { ensureVisualAssets } from "@/lib/assets/ingest";
+import { inferPrimaryImageHosts } from "@/lib/assets/candidates";
 import { type GenerationStepKey } from "@/lib/generation/steps";
 import { fingerprintFromSpec, maxSimilarity } from "@/lib/site-spec/fingerprint";
 import { validateSiteSpec } from "@/lib/site-spec/validate";
@@ -124,7 +125,7 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
     const pages = await crawler.crawl({
       startUrls: job.company.sources.map((source) => source.url),
       allowedHostnames,
-      maxPages: 4,
+      maxPages: 6,
     });
     for (const page of pages) {
       await prisma.source.updateMany({
@@ -187,16 +188,44 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
     await setStep(jobId, "FACT_EXTRACTION", "SUCCEEDED");
 
     await setStep(jobId, "IMAGE_DOWNLOAD", "RUNNING");
-    const imageUrls = [
-      ...pages.flatMap((page) => page.imageUrls),
-      ...pages.map((page) => page.logoUrl).filter((url): url is string => Boolean(url)),
-    ];
+    const primaryHosts = inferPrimaryImageHosts(job.company.sources, {
+      slug: job.company.slug,
+      companyName: job.company.name ?? extraction.data.businessName,
+    });
+    const imageCandidates = pages.flatMap((page) =>
+      page.imageCandidates.length > 0
+        ? page.imageCandidates
+        : page.imageUrls.map((url) => ({
+            url,
+            pageUrl: page.finalUrl,
+            alt: "",
+            width: null,
+            height: null,
+            role: "content" as const,
+            context: "",
+          })),
+    );
     const processedAssets = await ensureVisualAssets({
       companyId: job.companyId,
-      urls: imageUrls,
+      candidates: imageCandidates,
+      primaryHosts,
+      businessName: extraction.data.businessName,
+      description: extraction.data.description,
+      products: extraction.data.products.map((product) => product.name),
+      review: async (input) => {
+        const result = await ai.reviewImages(input);
+        await prisma.generationJob.update({
+          where: { id: jobId },
+          data: {
+            inputTokens: { increment: result.usage.inputTokens },
+            outputTokens: { increment: result.usage.outputTokens },
+          },
+        });
+        return result;
+      },
     });
     const createdAssets = [];
-    for (const [index, processed] of processedAssets.entries()) {
+    for (const processed of processedAssets) {
       const asset = await prisma.asset.upsert({
         where: {
           companyId_contentHash: {
@@ -204,10 +233,16 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
             contentHash: processed.contentHash,
           },
         },
-        update: { publicUrl: processed.publicUrl, storageKey: processed.storageKey },
+        update: {
+          publicUrl: processed.publicUrl,
+          storageKey: processed.storageKey,
+          sourceUrl: processed.sourceUrl || undefined,
+          type: assetTypeFromKind(processed.kind),
+        },
         create: {
           companyId: job.companyId,
-          type: index === 0 ? "HERO" : index < 3 ? "PRODUCT" : "GALLERY",
+          type: assetTypeFromKind(processed.kind),
+          sourceUrl: processed.sourceUrl || null,
           storageKey: processed.storageKey,
           publicUrl: processed.publicUrl,
           mimeType: processed.mimeType,
@@ -217,11 +252,23 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
           contentHash: processed.contentHash,
           dominantColors: processed.dominantColors,
           approved: true,
+          metadata: {
+            pageUrl: processed.pageUrl,
+            alt: processed.alt,
+            kind: processed.kind,
+          },
         },
       });
       createdAssets.push(asset);
     }
     await setStep(jobId, "IMAGE_DOWNLOAD", "SUCCEEDED");
+
+    const assetCatalog = createdAssets.map((asset, index) => ({
+      id: asset.id,
+      type: asset.type,
+      kind: processedAssets[index]?.kind ?? "product",
+      sourceUrl: asset.sourceUrl,
+    }));
 
     const recentVersions = await prisma.siteVersion.findMany({
       take: 20,
@@ -253,6 +300,7 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
       designNotes: job.company.designNotes,
       contentNotes: job.company.contentNotes,
       assetIds: createdAssets.map((asset) => asset.id),
+      assets: assetCatalog,
       recentFingerprints,
     });
 
@@ -281,6 +329,7 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
         designNotes: `${job.company.designNotes ?? ""}\nRetry after validation failure.`,
         contentNotes: job.company.contentNotes,
         assetIds: createdAssets.map((asset) => asset.id),
+        assets: assetCatalog,
         recentFingerprints,
       });
       spec = validateSiteSpec(planned.data, { allowedAssetIds });
@@ -302,6 +351,7 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
         },
         locale: job.company.preferredLanguage,
         assetIds: createdAssets.map((asset) => asset.id),
+        assets: assetCatalog,
         recentFingerprints,
       });
       spec = validateSiteSpec(planned.data, { allowedAssetIds });
@@ -420,4 +470,12 @@ function jsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNu
     return Prisma.JsonNull;
   }
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function assetTypeFromKind(kind: string) {
+  if (kind === "hero") return "HERO" as const;
+  if (kind === "product") return "PRODUCT" as const;
+  if (kind === "workshop") return "PROCESS" as const;
+  if (kind === "people") return "TEAM" as const;
+  return "GALLERY" as const;
 }

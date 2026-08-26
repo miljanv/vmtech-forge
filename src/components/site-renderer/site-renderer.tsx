@@ -1,8 +1,11 @@
 import type { SiteSpec } from "@/lib/site-spec/schema";
 import { publicAssetUrl } from "@/lib/assets/public-url";
+import { polishSiteNavigation } from "@/lib/site-spec/navigation";
 import { SiteChrome } from "@/components/site-renderer/site-chrome";
 import { SectionView } from "@/components/site-sections/section-view";
 import { JsonLd } from "@/components/site-renderer/json-ld";
+import { Reveal } from "@/components/site-renderer/reveal";
+import { ProductMarquee } from "@/components/site-renderer/product-marquee";
 
 type SiteAsset = {
   id: string;
@@ -69,15 +72,24 @@ export function SitePageView({
   demoMode: boolean;
   showBadge: boolean;
 }) {
-  const page = spec.pages.find((item) => item.path === path) ?? spec.pages[0];
+  const polished = polishSiteNavigation(
+    structuredClone(spec),
+    assets.map((asset) => asset.id),
+  );
+  const page = polished.pages.find((item) => item.path === path) ?? polished.pages[0];
   const assetMap = new Map(
     assets.map((asset) => [asset.id, publicAssetUrl(asset)]),
   );
-  const theme = spec.theme;
+  const theme = polished.theme;
+  const productNames =
+    page?.sections
+      .find((section) => section.type === "products")
+      ?.content.items.map((item) => item.title)
+      .filter(Boolean) ?? [];
 
   return (
     <div
-      className={`site-root surface-${theme.surfaceStyle}`}
+      className={`site-root surface-${theme.surfaceStyle} motion-${theme.motionIntensity} treat-${theme.imageTreatment} pattern-${theme.backgroundPattern}`}
       style={{
         ["--site-bg" as string]: theme.colors.background,
         ["--site-fg" as string]: theme.colors.foreground,
@@ -96,13 +108,18 @@ export function SitePageView({
         fontFamily: "var(--site-body), system-ui, sans-serif",
       }}
     >
-      <JsonLd spec={spec} slug={slug} />
-      <SiteChrome spec={spec} slug={slug} demoMode={demoMode && showBadge}>
+      <JsonLd spec={polished} slug={slug} />
+      <SiteChrome spec={polished} slug={slug} demoMode={demoMode && showBadge}>
         <main>
           {page.sections
             .filter((section) => section.visible)
             .map((section) => (
-              <SectionView key={section.id} section={section} assetMap={assetMap} slug={slug} />
+              <div key={section.id}>
+                <Reveal id={section.id} animation={section.animation ?? "fade-up"}>
+                  <SectionView section={section} assetMap={assetMap} slug={slug} />
+                </Reveal>
+                {section.type === "hero" ? <ProductMarquee names={productNames} /> : null}
+              </div>
             ))}
         </main>
       </SiteChrome>

@@ -1,5 +1,6 @@
 import { prisma, hasDatabase } from "@/server/db";
 import { SALES_STATUSES } from "@/lib/sales/status";
+import { summarizeGenerationCosts } from "@/lib/analytics/costs";
 
 export async function getDashboardData() {
   if (!hasDatabase()) {
@@ -130,4 +131,64 @@ export async function getPreviewStats(siteId: string) {
     lastViewedAt: visits[0]?.viewedAt ?? null,
     referrers: [...new Set(visits.map((visit) => visit.referrerHost).filter(Boolean))],
   };
+}
+
+export async function getStudioAnalytics() {
+  const empty = {
+    ...summarizeGenerationCosts([]),
+    previewVisits: 0,
+    uniqueSessions: 0,
+    readySites: 0,
+  };
+  if (!hasDatabase()) {
+    return empty;
+  }
+
+  try {
+    const [jobs, visits, uniqueSessions, readySites] = await Promise.all([
+      prisma.generationJob.findMany({
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          status: true,
+          provider: true,
+          inputTokens: true,
+          outputTokens: true,
+          createdAt: true,
+          companyId: true,
+          company: { select: { name: true, slug: true } },
+        },
+      }),
+      prisma.previewVisit.count(),
+      prisma.previewVisit.groupBy({
+        by: ["sessionHash"],
+        _count: { id: true },
+      }),
+      prisma.company.count({
+        where: { archivedAt: null, generationStatus: "SUCCEEDED" },
+      }),
+    ]);
+
+    const summary = summarizeGenerationCosts(
+      jobs.map((job) => ({
+        id: job.id,
+        status: job.status,
+        provider: job.provider,
+        inputTokens: job.inputTokens,
+        outputTokens: job.outputTokens,
+        createdAt: job.createdAt,
+        companyId: job.companyId,
+        companyName: job.company.name ?? job.company.slug,
+      })),
+    );
+
+    return {
+      ...summary,
+      previewVisits: visits,
+      uniqueSessions: uniqueSessions.length,
+      readySites,
+    };
+  } catch {
+    return empty;
+  }
 }
