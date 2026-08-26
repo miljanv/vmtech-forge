@@ -1,7 +1,14 @@
 import { z } from "zod";
 
+// OpenAI Structured Outputs reject JSON Schema `format: "uri"` from z.string().url().
+const httpUrlString = z.string().describe("Absolute http or https URL");
+const optionalHttpUrlString = z
+  .string()
+  .nullable()
+  .describe("Absolute http or https URL, or null");
+
 export const factProvenanceSchema = z.object({
-  sourceUrl: z.string().url(),
+  sourceUrl: httpUrlString,
   excerpt: z.string().nullable(),
 });
 
@@ -12,13 +19,13 @@ export const productFactSchema = z.object({
   price: z.number().nullable(),
   currency: z.string().nullable(),
   unit: z.string().nullable(),
-  sourceUrl: z.string().url().nullable(),
+  sourceUrl: optionalHttpUrlString,
 });
 
 export const testimonialFactSchema = z.object({
   quote: z.string(),
   author: z.string().nullable(),
-  sourceUrl: z.string().url().nullable(),
+  sourceUrl: optionalHttpUrlString,
 });
 
 export const businessFactsSchema = z.object({
@@ -37,7 +44,7 @@ export const businessFactsSchema = z.object({
   socialProfiles: z.array(
     z.object({
       network: z.string(),
-      url: z.string().url(),
+      url: httpUrlString,
     }),
   ),
   orderingMethods: z.array(z.string()),
@@ -48,7 +55,7 @@ export const businessFactsSchema = z.object({
   importantClaims: z.array(
     z.object({
       claim: z.string(),
-      sourceUrl: z.string().url().nullable(),
+      sourceUrl: optionalHttpUrlString,
     }),
   ),
   missingInformation: z.array(z.string()),

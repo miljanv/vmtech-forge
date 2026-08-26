@@ -10,6 +10,7 @@ import {
   EXTRACTION_SYSTEM_PROMPT,
   SITE_SYSTEM_PROMPT,
 } from "@/lib/ai/prompts";
+import { stripUnsupportedJsonSchemaFormats } from "@/lib/ai/structured-schema";
 import type {
   AIProvider,
   DesignInput,
@@ -59,6 +60,12 @@ function openaiFailed(error: unknown): AppError {
   });
 }
 
+function textFormat(schema: Parameters<typeof zodTextFormat>[0], name: string) {
+  const format = zodTextFormat(schema, name);
+  stripUnsupportedJsonSchemaFormats(format);
+  return format;
+}
+
 async function parseResponse(options: {
   model: string;
   input: Array<{ role: "system" | "user"; content: string }>;
@@ -103,7 +110,7 @@ export class OpenAIProvider implements AIProvider {
             content: `Company hint: ${input.companyName ?? "unknown"}\nLocale: ${input.locale}\n\n${sources}`,
           },
         ],
-        format: zodTextFormat(businessFactsSchema, "business_facts"),
+        format: textFormat(businessFactsSchema, "business_facts"),
       });
       if (!response.output_parsed) {
         throw new Error("Extractor returned no structured output.");
@@ -136,7 +143,7 @@ export class OpenAIProvider implements AIProvider {
             }),
           },
         ],
-        format: zodTextFormat(designProfileSchema, "design_profile"),
+        format: textFormat(designProfileSchema, "design_profile"),
       });
       if (!response.output_parsed) {
         throw new Error("Designer returned no structured output.");
@@ -172,7 +179,7 @@ export class OpenAIProvider implements AIProvider {
             }),
           },
         ],
-        format: zodTextFormat(siteSpecSchema, "site_spec"),
+        format: textFormat(siteSpecSchema, "site_spec"),
       });
       if (!response.output_parsed) {
         throw new Error("Site planner returned no structured output.");
@@ -205,7 +212,7 @@ export class OpenAIProvider implements AIProvider {
             }),
           },
         ],
-        format: zodTextFormat(siteSpecSchema, "site_spec"),
+        format: textFormat(siteSpecSchema, "site_spec"),
       });
       if (!response.output_parsed) {
         throw new Error("Section regeneration returned no structured output.");

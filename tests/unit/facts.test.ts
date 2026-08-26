@@ -61,3 +61,16 @@ describe("fact normalization", () => {
     expect(facts.confidence).toBe(1);
   });
 });
+
+describe("OpenAI structured fact schema", () => {
+  it("does not emit JSON Schema format: uri", async () => {
+    const { zodTextFormat } = await import("openai/helpers/zod");
+    const { businessFactsSchema } = await import("@/lib/facts/schema");
+    const { stripUnsupportedJsonSchemaFormats } = await import(
+      "@/lib/ai/structured-schema"
+    );
+    const format = zodTextFormat(businessFactsSchema, "business_facts");
+    stripUnsupportedJsonSchemaFormats(format);
+    expect(JSON.stringify(format)).not.toContain('"uri"');
+  });
+});
