@@ -1,11 +1,10 @@
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { getEnv } from "@/lib/env";
-import { redactSecrets } from "@/lib/errors";
+import { AppError, redactSecrets } from "@/lib/errors";
 import { wrapUntrustedSource } from "@/lib/security/sanitize";
 import { businessFactsSchema, type BusinessFacts } from "@/lib/facts/schema";
 import { normalizeFacts } from "@/lib/facts/normalize";
-import { factsFromSources, MockAIProvider } from "@/lib/ai/mock";
 import {
   DESIGN_SYSTEM_PROMPT,
   EXTRACTION_SYSTEM_PROMPT,
@@ -51,23 +50,52 @@ function describeAiError(error: unknown): string {
   return "nepoznata greška";
 }
 
+function openaiFailed(error: unknown): AppError {
+  return new AppError({
+    code: "OPENAI_FAILED",
+    status: 502,
+    message: error instanceof Error ? error.message : "OpenAI failed",
+    userMessage: `OpenAI poziv nije uspeo: ${describeAiError(error)}`,
+  });
+}
+
+async function parseResponse(options: {
+  model: string;
+  input: Array<{ role: "system" | "user"; content: string }>;
+  format: ReturnType<typeof zodTextFormat>;
+}) {
+  const env = getEnv();
+  const openai = client();
+  const base = {
+    model: options.model,
+    store: Boolean(env.OPENAI_STORE_RESPONSES),
+    input: options.input,
+    text: { format: options.format },
+  };
+  try {
+    return await openai.responses.parse({
+      ...base,
+      reasoning: { effort: "low" },
+    });
+  } catch (error) {
+    console.error("[ai.parse.reasoning]", error);
+    return await openai.responses.parse(base);
+  }
+}
+
 export class OpenAIProvider implements AIProvider {
   readonly name = "openai" as const;
-  private readonly fallback = new MockAIProvider();
 
   async extractFacts(
     input: ExtractionInput,
   ): Promise<StructuredResult<BusinessFacts>> {
-    const heuristic = factsFromSources(input);
+    const env = getEnv();
+    const sources = input.sources
+      .map((source) => wrapUntrustedSource(source.content, source.url))
+      .join("\n\n");
     try {
-      const env = getEnv();
-      const sources = input.sources
-        .map((source) => wrapUntrustedSource(source.content, source.url))
-        .join("\n\n");
-      const response = await client().responses.parse({
+      const response = await parseResponse({
         model: env.OPENAI_MODEL_EXTRACTOR,
-        store: Boolean(env.OPENAI_STORE_RESPONSES),
-        reasoning: { effort: "low" },
         input: [
           { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
           {
@@ -75,49 +103,28 @@ export class OpenAIProvider implements AIProvider {
             content: `Company hint: ${input.companyName ?? "unknown"}\nLocale: ${input.locale}\n\n${sources}`,
           },
         ],
-        text: { format: zodTextFormat(businessFactsSchema, "business_facts") },
+        format: zodTextFormat(businessFactsSchema, "business_facts"),
       });
-      const usage = usageFrom(response);
       if (!response.output_parsed) {
-        return {
-          data: {
-            ...heuristic,
-            warnings: [
-              ...heuristic.warnings,
-              "OpenAI nije vratio strukturirane činjenice; korišćen je sadržaj sa sajta.",
-            ],
-          },
-          usage,
-        };
+        throw new Error("Extractor returned no structured output.");
       }
       return {
         data: normalizeFacts(response.output_parsed),
-        usage,
+        usage: usageFrom(response),
       };
     } catch (error) {
       console.error("[ai.extractFacts]", error);
-      return {
-        data: {
-          ...heuristic,
-          warnings: [
-            ...heuristic.warnings,
-            `OpenAI extract nije uspeo (${describeAiError(error)}); korišćen je sadržaj sa sajta.`,
-          ],
-        },
-        usage: { inputTokens: 0, outputTokens: 0, requestId: "openai-fallback" },
-      };
+      throw openaiFailed(error);
     }
   }
 
   async analyzeBrand(
     input: DesignInput,
   ): Promise<StructuredResult<DesignProfile>> {
+    const env = getEnv();
     try {
-      const env = getEnv();
-      const response = await client().responses.parse({
+      const response = await parseResponse({
         model: env.OPENAI_MODEL_DESIGNER,
-        store: Boolean(env.OPENAI_STORE_RESPONSES),
-        reasoning: { effort: "low" },
         input: [
           { role: "system", content: DESIGN_SYSTEM_PROMPT },
           {
@@ -129,25 +136,26 @@ export class OpenAIProvider implements AIProvider {
             }),
           },
         ],
-        text: { format: zodTextFormat(designProfileSchema, "design_profile") },
+        format: zodTextFormat(designProfileSchema, "design_profile"),
       });
       if (!response.output_parsed) {
         throw new Error("Designer returned no structured output.");
       }
-      return { data: response.output_parsed, usage: usageFrom(response) };
+      return {
+        data: designProfileSchema.parse(response.output_parsed),
+        usage: usageFrom(response),
+      };
     } catch (error) {
       console.error("[ai.analyzeBrand]", error);
-      return this.fallback.analyzeBrand(input);
+      throw openaiFailed(error);
     }
   }
 
   async planSite(input: SitePlanInput): Promise<StructuredResult<SiteSpec>> {
+    const env = getEnv();
     try {
-      const env = getEnv();
-      const response = await client().responses.parse({
+      const response = await parseResponse({
         model: env.OPENAI_MODEL_DESIGNER,
-        store: Boolean(env.OPENAI_STORE_RESPONSES),
-        reasoning: { effort: "low" },
         input: [
           { role: "system", content: SITE_SYSTEM_PROMPT },
           {
@@ -164,7 +172,7 @@ export class OpenAIProvider implements AIProvider {
             }),
           },
         ],
-        text: { format: zodTextFormat(siteSpecSchema, "site_spec") },
+        format: zodTextFormat(siteSpecSchema, "site_spec"),
       });
       if (!response.output_parsed) {
         throw new Error("Site planner returned no structured output.");
@@ -172,7 +180,7 @@ export class OpenAIProvider implements AIProvider {
       return { data: siteSpecSchema.parse(response.output_parsed), usage: usageFrom(response) };
     } catch (error) {
       console.error("[ai.planSite]", error);
-      return this.fallback.planSite(input);
+      throw openaiFailed(error);
     }
   }
 
@@ -182,12 +190,10 @@ export class OpenAIProvider implements AIProvider {
     facts: BusinessFacts;
     mode: "section" | "copy" | "design";
   }): Promise<StructuredResult<SiteSpec>> {
+    const env = getEnv();
     try {
-      const env = getEnv();
-      const response = await client().responses.parse({
+      const response = await parseResponse({
         model: env.OPENAI_MODEL_DESIGNER,
-        store: Boolean(env.OPENAI_STORE_RESPONSES),
-        reasoning: { effort: "low" },
         input: [
           { role: "system", content: SITE_SYSTEM_PROMPT },
           {
@@ -199,7 +205,7 @@ export class OpenAIProvider implements AIProvider {
             }),
           },
         ],
-        text: { format: zodTextFormat(siteSpecSchema, "site_spec") },
+        format: zodTextFormat(siteSpecSchema, "site_spec"),
       });
       if (!response.output_parsed) {
         throw new Error("Section regeneration returned no structured output.");
@@ -207,7 +213,7 @@ export class OpenAIProvider implements AIProvider {
       return { data: siteSpecSchema.parse(response.output_parsed), usage: usageFrom(response) };
     } catch (error) {
       console.error("[ai.regenerateSection]", error);
-      return this.fallback.regenerateSection(input);
+      throw openaiFailed(error);
     }
   }
 }

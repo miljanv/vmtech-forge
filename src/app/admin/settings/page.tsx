@@ -21,9 +21,22 @@ export default async function SettingsPage() {
       <div className="rounded-2xl border p-4 text-sm text-muted-foreground">
         <p>Demo režim: {env.demoMode ? "uključen" : "isključen"}</p>
         <p>Clerk: {env.clerkEnabled ? "povezan" : "nije podešen"}</p>
-        <p>OpenAI: {env.openaiEnabled ? "povezan" : "mock provajder"}</p>
-        <p>Trigger.dev: {env.triggerEnabled ? "povezan" : "lokalni after() runner"}</p>
+        <p>
+          OpenAI:{" "}
+          {env.openaiEnabled
+            ? `povezan · ${env.OPENAI_MODEL_EXTRACTOR} / ${env.OPENAI_MODEL_DESIGNER}`
+            : "nije podešen — koristi se mock, dashboard ostaje na 0 requestova"}
+        </p>
+        <p>Trigger.dev: {env.triggerEnabled ? "povezan" : "nije podešen"}</p>
         <p>R2: {env.r2Enabled ? "povezan" : "lokalni storage"}</p>
+        {env.openaiEnabled && !env.triggerEnabled ? (
+          <p className="mt-3 text-foreground">
+            Generisanje trenutno ide preko Vercel funkcije. Ako crawl potroši limit,
+            OpenAI se uopšte ne pozove — zato dashboard ostaje na 0 tokena. Za pouzdan
+            GPT-5.6 dodaj <code className="rounded bg-muted px-1.5">TRIGGER_SECRET_KEY</code>{" "}
+            ili Vercel Pro.
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -124,7 +124,7 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
     const pages = await crawler.crawl({
       startUrls: job.company.sources.map((source) => source.url),
       allowedHostnames,
-      maxPages: 8,
+      maxPages: 4,
     });
     for (const page of pages) {
       await prisma.source.updateMany({

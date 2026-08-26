@@ -53,7 +53,13 @@ type CompanyDetail = {
   } | null;
   activities: Array<{ id: string; message: string; createdAt: string; type: string }>;
   emailDrafts: Array<{ id: string; subject: string; body: string }>;
-  generationJobs: Array<{ id: string; inputTokens: number; outputTokens: number; error: string | null }>;
+  generationJobs: Array<{
+    id: string;
+    provider?: string;
+    inputTokens: number;
+    outputTokens: number;
+    error: string | null;
+  }>;
   latestSpec: SiteSpec | null;
 };
 
@@ -136,7 +142,11 @@ export function CompanyDetail({ company }: { company: CompanyDetail }) {
           {company.generationJobs[0] ? (
             <div className="rounded-2xl border bg-card px-4 py-3 text-sm">
               <p>
-                Poslednje generisanje: {company.generationJobs[0].inputTokens} ulaznih /{" "}
+                Poslednje generisanje
+                {company.generationJobs[0].provider
+                  ? ` (${company.generationJobs[0].provider})`
+                  : ""}
+                : {company.generationJobs[0].inputTokens} ulaznih /{" "}
                 {company.generationJobs[0].outputTokens} izlaznih tokena ·{" "}
                 <strong>
                   {formatGenerationCost(
@@ -145,6 +155,14 @@ export function CompanyDetail({ company }: { company: CompanyDetail }) {
                   )}
                 </strong>
               </p>
+              {company.generationJobs[0].provider === "OPENAI" &&
+              company.generationJobs[0].inputTokens === 0 &&
+              company.generationJobs[0].outputTokens === 0 ? (
+                <p className="mt-2 text-destructive">
+                  OpenAI ključ je viđen, ali API nije naplaćen. Proveri da ključ pripada
+                  istom OpenAI projektu kao dashboard, ili da Vercel nije prekinuo poziv.
+                </p>
+              ) : null}
               {company.generationJobs[0].error ? (
                 <p className="mt-2 text-destructive">{company.generationJobs[0].error}</p>
               ) : null}

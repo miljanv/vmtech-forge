@@ -87,6 +87,7 @@ export default async function CompanyPage({
           })),
           generationJobs: company.generationJobs.map((job) => ({
             id: job.id,
+            provider: job.provider,
             inputTokens: job.inputTokens,
             outputTokens: job.outputTokens,
             error: job.error,

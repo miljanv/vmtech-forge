@@ -32,12 +32,20 @@ export default async function GenerationsPage() {
             >
               <div className="flex items-center justify-between gap-3">
                 <p className="font-medium">{job.company.name ?? job.company.slug}</p>
-                <Badge>{job.status}</Badge>
+                <div className="flex gap-2">
+                  <Badge variant="secondary">{job.provider}</Badge>
+                  <Badge>{job.status}</Badge>
+                </div>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
                 {job.progress}% · {job.currentStep} · {job.inputTokens}/{job.outputTokens} tokena ·{" "}
                 {formatGenerationCost(job.inputTokens, job.outputTokens)}
               </p>
+              {job.provider === "OPENAI" && job.inputTokens === 0 && job.outputTokens === 0 ? (
+                <p className="mt-2 text-sm text-destructive">
+                  OpenAI je izabran, ali nije potrošen nijedan token — poziv nije stigao do API-ja.
+                </p>
+              ) : null}
               {job.error ? (
                 <p className="mt-2 text-sm text-destructive">{job.error}</p>
               ) : null}
