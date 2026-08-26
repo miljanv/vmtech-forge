@@ -193,3 +193,18 @@ export function variantsForType(type: SectionType): readonly string[] {
       return ["default"];
   }
 }
+
+export function availableComponentsCatalog() {
+  return SECTION_TYPES.map((type) => ({
+    type,
+    variants: [...variantsForType(type)],
+  }));
+}
+
+export function supportedFontsCatalog() {
+  return FONT_PAIRINGS.map((pairing) => ({
+    id: pairing.id,
+    heading: pairing.heading,
+    body: pairing.body,
+  }));
+}
