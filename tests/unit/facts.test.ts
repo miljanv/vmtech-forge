@@ -33,4 +33,31 @@ describe("fact normalization", () => {
     expect(facts.productCategories).toEqual(["Sir", "Kajmak"]);
     expect(facts.products).toHaveLength(1);
   });
+
+  it("drops invalid URLs instead of throwing", () => {
+    const facts = normalizeFacts({
+      ...emptyBusinessFacts(),
+      businessName: "Šinkina teglica",
+      socialProfiles: [{ network: "instagram", url: "nije-url" }],
+      products: [
+        {
+          name: "Tegla",
+          description: null,
+          category: null,
+          price: Number("bad"),
+          currency: "RSD",
+          unit: null,
+          sourceUrl: "instagram.com/sinkina",
+        },
+      ],
+      provenance: [{ sourceUrl: "not-a-url", excerpt: "x" }],
+      confidence: 1.4,
+    });
+    expect(facts.businessName).toBe("Šinkina teglica");
+    expect(facts.socialProfiles).toEqual([]);
+    expect(facts.products[0]?.sourceUrl).toBeNull();
+    expect(facts.products[0]?.price).toBeNull();
+    expect(facts.provenance).toEqual([]);
+    expect(facts.confidence).toBe(1);
+  });
 });

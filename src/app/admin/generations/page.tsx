@@ -38,6 +38,9 @@ export default async function GenerationsPage() {
                 {job.progress}% · {job.currentStep} · {job.inputTokens}/{job.outputTokens} tokena ·{" "}
                 {formatGenerationCost(job.inputTokens, job.outputTokens)}
               </p>
+              {job.error ? (
+                <p className="mt-2 text-sm text-destructive">{job.error}</p>
+              ) : null}
             </Link>
           ))}
         </div>

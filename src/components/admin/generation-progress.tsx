@@ -42,6 +42,9 @@ export function GenerationProgress({ companyId }: { companyId: string }) {
         : false,
   });
   const job = query.data?.job;
+  if (query.isLoading) {
+    return <p className="text-sm text-muted-foreground">Učitavanje progresa…</p>;
+  }
   if (!job) {
     return <p className="text-sm text-muted-foreground">Nema aktivnog generisanja.</p>;
   }
@@ -57,6 +60,7 @@ export function GenerationProgress({ companyId }: { companyId: string }) {
             : ""}
         </span>
       </div>
+      {job.error ? <p className="text-sm text-destructive">{job.error}</p> : null}
       <Progress value={job.progress} />
       <ol className="space-y-3">
         {job.steps.map((step) => (

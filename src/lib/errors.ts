@@ -71,6 +71,16 @@ export function toUserErrorMessage(error: unknown): string {
   return "Došlo je do greške. Pokušajte ponovo.";
 }
 
+export function toJobErrorMessage(error: unknown): string {
+  if (error instanceof AppError) {
+    return error.userMessage;
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return redactSecrets(error.message).slice(0, 400);
+  }
+  return "Generisanje nije uspelo. Detalji su sačuvani u dnevniku.";
+}
+
 export function redactSecrets(value: string): string {
   return value
     .replace(/(sk_|pk_|tr_|whsec_|AKIA)[A-Za-z0-9_-]+/g, "$1[REDACTED]")

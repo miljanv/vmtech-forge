@@ -9,8 +9,8 @@ import { fingerprintFromSpec, maxSimilarity } from "@/lib/site-spec/fingerprint"
 import { validateSiteSpec } from "@/lib/site-spec/validate";
 import type { DesignFingerprint } from "@/lib/site-spec/schema";
 import { prisma } from "@/server/db";
-import { AppError } from "@/lib/errors";
-import type { Prisma } from "@/generated/prisma";
+import { AppError, toJobErrorMessage } from "@/lib/errors";
+import { Prisma } from "@/generated/prisma";
 
 const STEP_PROGRESS: Record<GenerationStepKey, number> = {
   QUEUED: 5,
@@ -155,7 +155,7 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
         name: job.company.name || extraction.data.businessName,
         contactEmail: job.company.contactEmail || extraction.data.email,
         contactPhone: job.company.contactPhone || extraction.data.phone,
-        businessFacts: extraction.data as unknown as Prisma.InputJsonValue,
+        businessFacts: jsonValue(extraction.data),
       },
     });
     await prisma.extractedFact.deleteMany({ where: { companyId: job.companyId } });
@@ -164,14 +164,14 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
         {
           companyId: job.companyId,
           key: "businessName",
-          value: extraction.data.businessName as unknown as Prisma.InputJsonValue,
+          value: jsonValue(extraction.data.businessName),
           sourceUrl: extraction.data.provenance[0]?.sourceUrl,
           confidence: extraction.data.confidence,
         },
         {
           companyId: job.companyId,
           key: "products",
-          value: extraction.data.products as unknown as Prisma.InputJsonValue,
+          value: jsonValue(extraction.data.products),
           confidence: extraction.data.confidence,
         },
       ],
@@ -332,8 +332,8 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
         siteId: site.id,
         versionNumber: (lastVersion?.versionNumber ?? 0) + 1,
         status: "PUBLISHED",
-        siteSpec: spec as unknown as Prisma.InputJsonValue,
-        designFingerprint: fingerprint as unknown as Prisma.InputJsonValue,
+        siteSpec: jsonValue(spec),
+        designFingerprint: jsonValue(fingerprint),
         similarityScore: similarity,
         createdBy: job.createdBy,
         generationJobId: jobId,
@@ -379,10 +379,11 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
       },
     });
   } catch (error) {
-    const message =
-      error instanceof AppError
-        ? error.userMessage
-        : "Generisanje nije uspelo. Detalji su sačuvani u dnevniku.";
+    const message = toJobErrorMessage(error);
+    const current = await prisma.generationJob.findUnique({ where: { id: jobId } });
+    if (current?.currentStep) {
+      await setStep(jobId, current.currentStep as GenerationStepKey, "FAILED", message);
+    }
     await prisma.generationJob.update({
       where: { id: jobId },
       data: {
@@ -412,4 +413,11 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
     });
     throw error;
   }
+}
+
+function jsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
+  if (value === null || value === undefined) {
+    return Prisma.JsonNull;
+  }
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }

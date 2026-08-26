@@ -134,16 +134,21 @@ export function CompanyDetail({ company }: { company: CompanyDetail }) {
           <p>Sledeći follow-up: {company.nextFollowUpAt ?? "—"}</p>
           <p>Preview: /{company.slug}</p>
           {company.generationJobs[0] ? (
-            <p className="rounded-2xl border bg-card px-4 py-3 text-sm">
-              Poslednje generisanje: {company.generationJobs[0].inputTokens} ulaznih /{" "}
-              {company.generationJobs[0].outputTokens} izlaznih tokena ·{" "}
-              <strong>
-                {formatGenerationCost(
-                  company.generationJobs[0].inputTokens,
-                  company.generationJobs[0].outputTokens,
-                )}
-              </strong>
-            </p>
+            <div className="rounded-2xl border bg-card px-4 py-3 text-sm">
+              <p>
+                Poslednje generisanje: {company.generationJobs[0].inputTokens} ulaznih /{" "}
+                {company.generationJobs[0].outputTokens} izlaznih tokena ·{" "}
+                <strong>
+                  {formatGenerationCost(
+                    company.generationJobs[0].inputTokens,
+                    company.generationJobs[0].outputTokens,
+                  )}
+                </strong>
+              </p>
+              {company.generationJobs[0].error ? (
+                <p className="mt-2 text-destructive">{company.generationJobs[0].error}</p>
+              ) : null}
+            </div>
           ) : null}
           <GenerationProgress companyId={company.id} />
         </TabsContent>
