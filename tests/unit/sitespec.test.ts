@@ -40,4 +40,38 @@ describe("SiteSpec validation", () => {
       validateSiteSpec(spec, { allowedAssetIds: new Set(["asset-1"]) }),
     ).not.toThrow();
   });
+
+  it("repairs common GPT mistakes instead of failing the job", async () => {
+    const ai = new MockAIProvider();
+    const facts = emptyBusinessFacts();
+    facts.businessName = "Šinkina teglica";
+    facts.description = "Zanatska radionica";
+    const brand = await ai.analyzeBrand({
+      facts,
+      dominantColors: ["#3F2A1D"],
+      recentFingerprints: [],
+    });
+    const spec = buildMockSiteSpec({
+      facts,
+      profile: brand.data,
+      locale: "sr-Latn",
+      assetIds: ["asset-1"],
+      recentFingerprints: [],
+    });
+    const hero = spec.pages[0]?.sections[0];
+    if (!hero) throw new Error("missing hero");
+    hero.variant = "not-a-real-variant";
+    hero.content.heading = null;
+    hero.assetIds = ["stolen-asset"];
+    hero.content.ctaHref = "/gde-kupiti";
+    spec.theme.colors.foreground = "#EEEEEE";
+    spec.theme.colors.background = "#FFFFFF";
+
+    const repaired = validateSiteSpec(spec, { allowedAssetIds: new Set(["asset-1"]) });
+    const repairedHero = repaired.pages[0]?.sections[0];
+    expect(repairedHero?.variant).not.toBe("not-a-real-variant");
+    expect(repairedHero?.content.heading).toBeTruthy();
+    expect(repairedHero?.assetIds).toEqual([]);
+    expect(repairedHero?.content.ctaHref).toBe("/gde-kupiti");
+  });
 });

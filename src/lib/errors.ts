@@ -73,6 +73,13 @@ export function toUserErrorMessage(error: unknown): string {
 
 export function toJobErrorMessage(error: unknown): string {
   if (error instanceof AppError) {
+    const details = error.details?.errors;
+    const extra = Array.isArray(details)
+      ? details.filter((item): item is string => typeof item === "string").slice(0, 6)
+      : [];
+    if (error.code === "INVALID_SITE_SPEC" && extra.length > 0) {
+      return redactSecrets(`${error.userMessage} ${extra.join(" ")}`).slice(0, 500);
+    }
     return error.userMessage;
   }
   if (error instanceof Error && error.message.trim()) {
