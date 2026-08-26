@@ -122,10 +122,12 @@ pnpm trigger:dev
 ## Vercel
 
 1. Import the repository.
-2. Set every production environment variable from `.env.example`.
-3. Build command: `pnpm build` (runs `prisma generate`).
-4. Attach the Trigger.dev project for durable jobs.
-5. Put the public app URL in `NEXT_PUBLIC_APP_URL`. Previews are served as `https://your-domain.com/{company-slug}` with `noindex, nofollow`.
+2. Set production environment variables from `.env.example`. **`DATABASE_URL` and `DIRECT_URL` are required** — without PostgreSQL `/admin` cannot render.
+3. Set `NEXT_PUBLIC_APP_URL` to the Vercel URL (not `localhost`).
+4. If you want Clerk login, add `vmtech-forge-six.vercel.app` (or your domain) in the Clerk dashboard allowed origins, and keep `STUDIOFORGE_DEMO_MODE=false`. Demo mode skips Clerk protection and is not safe on a public URL.
+5. Build command: `pnpm build` (runs `prisma generate`). After the database exists, run `pnpm prisma migrate deploy` against production (`DIRECT_URL`) or add that to the Vercel build command.
+6. Attach the Trigger.dev project for durable jobs.
+7. Previews are served as `https://your-domain.com/{company-slug}` with `noindex, nofollow`.
 
 ## Security notes
 

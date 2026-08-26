@@ -12,7 +12,7 @@ import type { AdminUser } from "@/lib/auth/constants";
 export async function getAdminUser(): Promise<AdminUser | null> {
   if (isDemoAuthEnabled()) {
     const jar = await cookies();
-    if (jar.get("studioforge-demo")?.value === "1" || getEnv().demoMode) {
+    if (jar.get("studioforge-demo")?.value === "1") {
       return DEMO_ADMIN;
     }
     if (!getEnv().clerkEnabled) {

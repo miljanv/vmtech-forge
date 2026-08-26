@@ -4,17 +4,18 @@ export const SECURITY_HEADERS: Record<string, string> = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-DNS-Prefetch-Control": "off",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
 };
 
 export const ADMIN_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://clerk.com https://*.clerk.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://clerk.com https://*.clerk.com https://challenges.cloudflare.com https://*.protect.clerk.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.clerk.accounts.dev https://api.clerk.com https://*.clerk.com https://*.trigger.dev",
-  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
+  "connect-src 'self' https://*.clerk.accounts.dev https://api.clerk.com https://*.clerk.com https://clerk-telemetry.com https://*.clerk-telemetry.com https://*.trigger.dev https://challenges.cloudflare.com https://*.protect.clerk.com",
+  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://*.protect.clerk.com",
+  "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -30,24 +30,33 @@ function withHeaders(response: Response, admin: boolean) {
   return next;
 }
 
+function usesClerkUi(pathname: string) {
+  return (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up")
+  );
+}
+
 export default function proxy(request: NextRequest, event: unknown) {
-  const admin = request.nextUrl.pathname.startsWith("/admin");
+  const clerkUi = usesClerkUi(request.nextUrl.pathname);
   const demo =
     process.env.STUDIOFORGE_DEMO_MODE === "true" ||
     process.env.NODE_ENV === "test" ||
     !process.env.CLERK_SECRET_KEY;
 
   if (demo) {
-    return withHeaders(NextResponse.next(), admin);
+    return withHeaders(NextResponse.next(), clerkUi);
   }
 
   const result = clerkHandler(request, event as never);
   if (result instanceof Promise) {
     return result.then((response) =>
-      withHeaders(response ?? NextResponse.next(), admin),
+      withHeaders(response ?? NextResponse.next(), clerkUi),
     );
   }
-  return withHeaders(result ?? NextResponse.next(), admin);
+  return withHeaders(result ?? NextResponse.next(), clerkUi);
 }
 
 export const config = {
