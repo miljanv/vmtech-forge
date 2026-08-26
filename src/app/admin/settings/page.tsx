@@ -14,7 +14,6 @@ export default async function SettingsPage() {
         <h1 className="font-heading mt-2 text-4xl">Podešavanja</h1>
       </div>
       <SettingsForm
-        defaultDealValueMinor={settings.defaultDealValueMinor}
         similarityThreshold={settings.similarityThreshold}
         followUpBusinessDays={settings.followUpBusinessDays}
         demoBadgeEnabled={settings.demoBadgeEnabled}

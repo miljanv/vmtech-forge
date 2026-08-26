@@ -78,7 +78,12 @@ export function getEnv(): AppEnv {
     PREVIEW_SESSION_SALT: process.env.PREVIEW_SESSION_SALT,
   });
 
-  const demoMode = true;
+  const demoMode =
+    parsed.STUDIOFORGE_DEMO_MODE ||
+    parsed.NODE_ENV === "test" ||
+    (parsed.NODE_ENV !== "production" &&
+      !parsed.CLERK_SECRET_KEY &&
+      !parsed.OPENAI_API_KEY);
   const clerkEnabled = false;
   const r2Enabled = Boolean(
     parsed.R2_ACCOUNT_ID &&

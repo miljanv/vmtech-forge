@@ -113,7 +113,7 @@ export async function createCompanyFromWizard(
         contactEmail: input.contactEmail || null,
         contactPhone: input.contactPhone || null,
         notes: input.notes || null,
-        dealValueMinor: input.dealValueMinor,
+        dealValueMinor: input.dealValueMinor ?? 12000,
         preferredLanguage: input.preferredLanguage,
         preferredCta: input.preferredCta || null,
         designNotes: input.designNotes || null,
@@ -162,7 +162,7 @@ export async function createCompanyFromWizard(
     const job = await tx.generationJob.create({
       data: {
         companyId: created.id,
-        provider: env.openaiEnabled && !env.demoMode ? "OPENAI" : "MOCK",
+        provider: env.openaiEnabled ? "OPENAI" : "MOCK",
         extractorModel:
           settings?.extractorModel || env.OPENAI_MODEL_EXTRACTOR,
         designerModel: settings?.designerModel || env.OPENAI_MODEL_DESIGNER,
@@ -217,7 +217,7 @@ export async function startGeneration(companyId: string, admin: AdminUser) {
   const job = await prisma.generationJob.create({
     data: {
       companyId,
-      provider: env.openaiEnabled && !env.demoMode ? "OPENAI" : "MOCK",
+      provider: env.openaiEnabled ? "OPENAI" : "MOCK",
       extractorModel: settings?.extractorModel || env.OPENAI_MODEL_EXTRACTOR,
       designerModel: settings?.designerModel || env.OPENAI_MODEL_DESIGNER,
       idempotencyKey: `gen_${companyId}_${nanoid()}`,

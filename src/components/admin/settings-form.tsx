@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export function SettingsForm(props: {
-  defaultDealValueMinor: number;
   similarityThreshold: number;
   followUpBusinessDays: number;
   demoBadgeEnabled: boolean;
@@ -26,14 +25,6 @@ export function SettingsForm(props: {
         else toast.success("Podešavanja su sačuvana.");
       }}
     >
-      <div className="grid gap-2">
-        <Label>Podrazumevana ponuda (centi, EUR)</Label>
-        <Input
-          type="number"
-          value={form.defaultDealValueMinor}
-          onChange={(e) => setForm({ ...form, defaultDealValueMinor: Number(e.target.value) })}
-        />
-      </div>
       <div className="grid gap-2">
         <Label>Prag sličnosti dizajna</Label>
         <Input

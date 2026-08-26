@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { GenerationProgress } from "@/components/admin/generation-progress";
 import { PreviewToolbar } from "@/components/admin/preview-toolbar";
 import { SalesEmailPanel } from "@/components/admin/sales-email-panel";
-import { SALES_STATUS_LABELS, SALES_STATUSES, type SalesStatus, formatDealValue } from "@/lib/sales/status";
+import { SALES_STATUS_LABELS, SALES_STATUSES, type SalesStatus } from "@/lib/sales/status";
 import {
   addNoteAction,
   archiveCompanyAction,
@@ -20,6 +20,7 @@ import {
 } from "@/server/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SiteEditor } from "@/components/admin/site-editor";
+import { formatGenerationCost } from "@/lib/ai/pricing";
 import type { SiteSpec } from "@/lib/site-spec/schema";
 
 type CompanyDetail = {
@@ -74,12 +75,24 @@ export function CompanyDetail({ company }: { company: CompanyDetail }) {
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge>{SALES_STATUS_LABELS[company.salesStatus]}</Badge>
             <Badge variant="secondary">{company.generationStatus}</Badge>
-            <Badge variant="outline">{formatDealValue(company.dealValueMinor, company.currency)}</Badge>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => run("Generisanje je pokrenuto.", () => startGenerationAction(company.id))}>
-            Pokreni generisanje
+          <Button
+            onClick={() => {
+              if (
+                !window.confirm(
+                  "Pokrenuti generisanje ispočetka? Proći će ceo tok: crawl, činjenice, slike, dizajn i novi sajt.",
+                )
+              ) {
+                return;
+              }
+              void run("Generisanje je pokrenuto ispočetka.", () =>
+                startGenerationAction(company.id),
+              );
+            }}
+          >
+            Regeneriši od početka
           </Button>
           <Button variant="outline" render={<Link href={`/${company.slug}`} target="_blank" />}>
             Pregledaj sajt
@@ -120,6 +133,18 @@ export function CompanyDetail({ company }: { company: CompanyDetail }) {
           <p>Poslednji kontakt: {company.lastContactAt ?? "—"}</p>
           <p>Sledeći follow-up: {company.nextFollowUpAt ?? "—"}</p>
           <p>Preview: /{company.slug}</p>
+          {company.generationJobs[0] ? (
+            <p className="rounded-2xl border bg-card px-4 py-3 text-sm">
+              Poslednje generisanje: {company.generationJobs[0].inputTokens} ulaznih /{" "}
+              {company.generationJobs[0].outputTokens} izlaznih tokena ·{" "}
+              <strong>
+                {formatGenerationCost(
+                  company.generationJobs[0].inputTokens,
+                  company.generationJobs[0].outputTokens,
+                )}
+              </strong>
+            </p>
+          ) : null}
           <GenerationProgress companyId={company.id} />
         </TabsContent>
 

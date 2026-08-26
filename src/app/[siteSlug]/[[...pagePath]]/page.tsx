@@ -98,7 +98,14 @@ export default async function PublicSitePage({
       <style>{`:root{--site-heading:'${pairing.heading}',serif;--site-body:'${pairing.body}',sans-serif;} .font-heading{font-family:var(--site-heading);}`}</style>
       <SitePageView
         spec={spec}
-        assets={site.company.assets.filter((asset) => asset.approved && !asset.excluded)}
+        assets={site.company.assets
+          .filter((asset) => asset.approved && !asset.excluded)
+          .map((asset) => ({
+            id: asset.id,
+            publicUrl: asset.publicUrl,
+            type: asset.type,
+            storageKey: asset.storageKey,
+          }))}
         slug={site.slug}
         path={path}
         demoMode={site.demoMode}

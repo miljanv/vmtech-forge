@@ -1,6 +1,6 @@
 import { getPipeline } from "@/server/services/sales";
 import { PipelineBoard } from "@/components/admin/pipeline-board";
-import { SALES_STATUS_LABELS, formatDealValue } from "@/lib/sales/status";
+import { SALES_STATUS_LABELS } from "@/lib/sales/status";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +37,6 @@ export default async function PipelinePage() {
             <tr>
               <th className="px-3 py-2">Firma</th>
               <th className="px-3 py-2">Kontakt</th>
-              <th className="px-3 py-2">Vrednost</th>
               <th className="px-3 py-2">Follow-up</th>
             </tr>
           </thead>
@@ -48,7 +47,6 @@ export default async function PipelinePage() {
                   <Link href={`/admin/companies/${company.id}`}>{company.name ?? company.slug}</Link>
                 </td>
                 <td className="px-3 py-2">{company.contactEmail ?? company.contactPhone ?? "—"}</td>
-                <td className="px-3 py-2">{formatDealValue(company.dealValueMinor)}</td>
                 <td className="px-3 py-2">
                   {company.nextFollowUpAt?.toLocaleDateString("sr-Latn") ?? "—"}
                 </td>

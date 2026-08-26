@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { formatGenerationCost } from "@/lib/ai/pricing";
 
 type Step = {
   key: string;
@@ -22,6 +23,8 @@ type Job = {
   progress: number;
   error: string | null;
   retryCount: number;
+  inputTokens?: number;
+  outputTokens?: number;
   steps: Step[];
 };
 
@@ -45,9 +48,14 @@ export function GenerationProgress({ companyId }: { companyId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Badge>{job.status}</Badge>
-        <span className="text-sm text-muted-foreground">{job.progress}%</span>
+        <span className="text-sm text-muted-foreground">
+          {job.progress}%
+          {job.inputTokens != null && job.outputTokens != null
+            ? ` · ${formatGenerationCost(job.inputTokens, job.outputTokens)}`
+            : ""}
+        </span>
       </div>
       <Progress value={job.progress} />
       <ol className="space-y-3">

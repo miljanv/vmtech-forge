@@ -25,7 +25,6 @@ export function CompanyWizard() {
     contactEmail: "",
     contactPhone: "",
     notes: "",
-    dealValueMinor: 12000,
     preferredLanguage: "sr-Latn",
     sourceText: "",
     instagramUrl: "",
@@ -96,13 +95,6 @@ export function CompanyWizard() {
           </Field>
           <Field label="Beleške">
             <Textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} />
-          </Field>
-          <Field label="Ponuda (EUR, u centima)">
-            <Input
-              type="number"
-              value={form.dealValueMinor}
-              onChange={(e) => update("dealValueMinor", Number(e.target.value))}
-            />
           </Field>
         </div>
       ) : null}

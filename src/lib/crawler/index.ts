@@ -7,7 +7,7 @@ import type { CrawlerProvider } from "@/lib/crawler/types";
 
 export function getCrawlerProvider(): CrawlerProvider {
   const env = getEnv();
-  if (env.demoMode && !env.firecrawlEnabled) {
+  if (process.env.NODE_ENV === "test") {
     return new MockCrawlerProvider();
   }
   if (env.firecrawlEnabled) {

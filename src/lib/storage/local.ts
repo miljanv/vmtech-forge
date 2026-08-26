@@ -1,6 +1,5 @@
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { getAppUrl } from "@/lib/env";
 import type { StorageProvider, StoredObject } from "@/lib/storage/types";
 
 const ROOT = path.join(process.cwd(), ".data", "storage");
@@ -18,7 +17,7 @@ export class LocalStorageProvider implements StorageProvider {
     await writeFile(filePath, options.body);
     return {
       key: options.key,
-      publicUrl: `${getAppUrl()}/media/${options.key}`,
+      publicUrl: `/media/${options.key}`,
       size: options.body.byteLength,
     };
   }

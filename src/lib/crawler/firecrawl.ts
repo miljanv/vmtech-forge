@@ -1,4 +1,5 @@
 import Firecrawl from "@mendable/firecrawl-js";
+import { load } from "cheerio";
 import { getEnv } from "@/lib/env";
 import { htmlToPlainText, sanitizeSourceText } from "@/lib/security/sanitize";
 import { assertPublicHttpUrl } from "@/lib/security/ssrf";
@@ -28,6 +29,25 @@ export class FirecrawlProvider implements CrawlerProvider {
         (result as { markdown?: string }).markdown ?? "",
       );
       const html = (result as { html?: string }).html ?? markdown;
+      const imageUrls: string[] = [];
+      const $ = load(html);
+      $("img").each((_, el) => {
+        const src = $(el).attr("src") || $(el).attr("data-src");
+        if (!src) return;
+        try {
+          imageUrls.push(new URL(src, parsed.href).toString());
+        } catch {
+          // ignore
+        }
+      });
+      const og = $('meta[property="og:image"]').attr("content");
+      if (og) {
+        try {
+          imageUrls.push(new URL(og, parsed.href).toString());
+        } catch {
+          // ignore
+        }
+      }
       pages.push({
         url: parsed.href,
         finalUrl: parsed.href,
@@ -35,7 +55,7 @@ export class FirecrawlProvider implements CrawlerProvider {
         markdown,
         text: htmlToPlainText(html),
         htmlHash: hashBuffer(markdown),
-        imageUrls: [],
+        imageUrls: [...new Set(imageUrls)].slice(0, 12),
         logoUrl: null,
         faviconUrl: null,
         status: 200,

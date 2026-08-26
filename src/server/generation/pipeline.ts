@@ -1,9 +1,9 @@
 import { getEnv } from "@/lib/env";
 import { getAIProvider } from "@/lib/ai";
 import { getCrawlerProvider } from "@/lib/crawler";
-import { createPlaceholderAsset } from "@/lib/assets/process";
 import { wrapUntrustedSource } from "@/lib/security/sanitize";
 import { assertPublicHttpUrl } from "@/lib/security/ssrf";
+import { ensureVisualAssets } from "@/lib/assets/ingest";
 import { type GenerationStepKey } from "@/lib/generation/steps";
 import { fingerprintFromSpec, maxSimilarity } from "@/lib/site-spec/fingerprint";
 import { validateSiteSpec } from "@/lib/site-spec/validate";
@@ -187,14 +187,16 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
     await setStep(jobId, "FACT_EXTRACTION", "SUCCEEDED");
 
     await setStep(jobId, "IMAGE_DOWNLOAD", "RUNNING");
-    const colors = ["#3F2A1D", "#C4A574", "#1F3A34", "#E7D7BE"];
+    const imageUrls = [
+      ...pages.flatMap((page) => page.imageUrls),
+      ...pages.map((page) => page.logoUrl).filter((url): url is string => Boolean(url)),
+    ];
+    const processedAssets = await ensureVisualAssets({
+      companyId: job.companyId,
+      urls: imageUrls,
+    });
     const createdAssets = [];
-    for (const [index, label] of ["hero", "product-1", "product-2", "process"].entries()) {
-      const processed = await createPlaceholderAsset({
-        companyId: job.companyId,
-        label,
-        color: colors[index] ?? "#C4A574",
-      });
+    for (const [index, processed] of processedAssets.entries()) {
       const asset = await prisma.asset.upsert({
         where: {
           companyId_contentHash: {
@@ -202,10 +204,10 @@ export async function runGenerationPipeline(jobId: string): Promise<void> {
             contentHash: processed.contentHash,
           },
         },
-        update: { publicUrl: processed.publicUrl },
+        update: { publicUrl: processed.publicUrl, storageKey: processed.storageKey },
         create: {
           companyId: job.companyId,
-          type: index === 0 ? "HERO" : index === 3 ? "PROCESS" : "PRODUCT",
+          type: index === 0 ? "HERO" : index < 3 ? "PRODUCT" : "GALLERY",
           storageKey: processed.storageKey,
           publicUrl: processed.publicUrl,
           mimeType: processed.mimeType,

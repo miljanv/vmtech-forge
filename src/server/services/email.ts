@@ -1,5 +1,4 @@
 import { getAppUrl } from "@/lib/env";
-import { formatDealValue } from "@/lib/sales/status";
 import { prisma } from "@/server/db";
 import { NotFoundError } from "@/lib/errors";
 import { updateSalesStatus, scheduleFollowUp } from "@/server/services/sales";
@@ -8,11 +7,8 @@ import type { AdminUser } from "@/lib/auth/constants";
 export function buildSalesEmail(options: {
   companyName: string;
   previewUrl: string;
-  dealValueMinor: number;
-  currency: string;
 }) {
   const subject = `Pripremili smo predlog sajta za ${options.companyName}`;
-  const price = formatDealValue(options.dealValueMinor, options.currency);
   const body = [
     "Poštovani,",
     "",
@@ -24,8 +20,6 @@ export function buildSalesEmail(options: {
     options.previewUrl,
     "",
     "Pregledajte predlog u miru. Ako Vam odgovara smer, finalna podešavanja, sitne izmene sadržaja i povezivanje domena su uključeni.",
-    "",
-    `Ponuda za izradu i objavu sajta: ${price}.`,
     "",
     "Srdačan pozdrav,",
     "StudioForge",
@@ -43,8 +37,6 @@ export async function createEmailDraft(companyId: string, admin: AdminUser) {
   const draftContent = buildSalesEmail({
     companyName: company.name ?? company.slug,
     previewUrl,
-    dealValueMinor: company.dealValueMinor,
-    currency: company.currency,
   });
   const draft = await prisma.emailDraft.create({
     data: {

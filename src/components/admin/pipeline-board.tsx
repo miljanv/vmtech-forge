@@ -11,7 +11,7 @@ import {
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { SALES_STATUS_LABELS, SALES_STATUSES, type SalesStatus, formatDealValue } from "@/lib/sales/status";
+import { SALES_STATUS_LABELS, SALES_STATUSES, type SalesStatus } from "@/lib/sales/status";
 import { updateStatusAction } from "@/server/actions";
 
 type Card = {
@@ -80,7 +80,6 @@ function CardItem({ company }: { company: Card }) {
       <Link href={`/admin/companies/${company.id}`} className="font-medium hover:underline">
         {company.name ?? company.slug}
       </Link>
-      <p className="mt-1 text-xs text-muted-foreground">{formatDealValue(company.dealValueMinor)}</p>
       <p className="text-xs text-muted-foreground">{company.contactName ?? company.contactEmail ?? "—"}</p>
     </article>
   );

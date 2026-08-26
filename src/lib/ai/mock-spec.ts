@@ -9,7 +9,31 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
   const city = facts.city ?? null;
   const assetId = input.assetIds[0] ?? null;
   const productAssets = input.assetIds.slice(1, 4);
-  const cta = input.preferredCta || "Poručite danas";
+  const cta = input.preferredCta || "Poručite";
+  const reasons = [
+    {
+      title: city ? `Iz ${city}` : "Lokalni rad",
+      body: city
+        ? `Radiona je vezana za ${city} i okolinu.`
+        : "Sve što piše na sajtu dolazi iz javnih izvora o ovoj firmi.",
+      meta: null,
+      assetId: null,
+    },
+    {
+      title: facts.deliveryInformation ? "Dostava" : "Direktan dogovor",
+      body:
+        facts.deliveryInformation ??
+        "Porudžbina ide kroz direktan kontakt, bez izmišljenih rokova.",
+      meta: null,
+      assetId: null,
+    },
+    {
+      title: "Po meri radionice",
+      body: "Predlog sajta prati stvarnu ponudu, ne generički katalog.",
+      meta: null,
+      assetId: null,
+    },
+  ];
 
   const productItems = facts.products.map((product, index) => ({
     title: product.name,
@@ -90,7 +114,7 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
           {
             id: "hero-home",
             type: "hero",
-            variant: profile.heroVariant,
+            variant: "cinematic",
             visible: true,
             animation: "fade-up",
             content: {
@@ -114,30 +138,11 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
             animation: "fade-up",
             content: {
               eyebrow: null,
-              heading: "Zašto naručiti kod nas",
+              heading: "Zašto baš ova radionica",
               body: null,
               ctaLabel: null,
               ctaHref: null,
-              items: [
-                {
-                  title: "Lokalno mleko",
-                  body: "Sirovina stiže iz neposrednog okruženja.",
-                  meta: null,
-                  assetId: null,
-                },
-                {
-                  title: "Kratak lanac",
-                  body: "Od gazdinstva do tegle bez nepotrebnih posrednika.",
-                  meta: null,
-                  assetId: null,
-                },
-                {
-                  title: "Porodični rad",
-                  body: "Male serije i pažnja koja se vidi u ukusu.",
-                  meta: null,
-                  assetId: null,
-                },
-              ],
+              items: reasons,
             },
             assetIds: [],
             layout: { fullBleed: false, inverted: false },
@@ -152,8 +157,8 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
                   animation: "fade-up" as const,
                   content: {
                     eyebrow: "Ponuda",
-                    heading: "Proizvodi koje zaista pravimo",
-                    body: "Cene i opisi preuzeti su samo iz javnih izvora.",
+                    heading: "Šta zaista nudimo",
+                    body: "Opisi dolaze samo iz javnih izvora. Ako nešto nije navedeno, nismo to dodavali.",
                     ctaLabel: "Cela ponuda",
                     ctaHref: "/proizvodi",
                     items: productItems,
@@ -171,7 +176,7 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
             animation: "reveal",
             content: {
               eyebrow: "Priča",
-              heading: "Zanat koji ostaje kod kuće",
+              heading: "Priča iza imena",
               body: facts.brandStory,
               ctaLabel: "Više o nama",
               ctaHref: "/o-nama",
@@ -188,26 +193,26 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
             animation: "fade-up",
             content: {
               eyebrow: "Proces",
-              heading: "Od mleka do tegle",
+              heading: "Kako radimo",
               body: null,
               ctaLabel: null,
               ctaHref: null,
               items: [
                 {
                   title: "Prikupljanje",
-                  body: "Mleko stiže od poznatih gazdinstava.",
+                  body: "Javni izvori i stvarni kontakt podaci ulaze u predlog sajta.",
                   meta: "01",
                   assetId: null,
                 },
                 {
-                  title: "Obrada",
-                  body: "Male serije i provereni porodični postupci.",
+                  title: "Oblikovanje",
+                  body: "Dizajn i copy se slažu oko činjenica, ne oko šablona.",
                   meta: "02",
                   assetId: null,
                 },
                 {
-                  title: "Isporuka",
-                  body: facts.deliveryInformation ?? "Lično preuzimanje i lokalna dostava.",
+                  title: "Porudžbina",
+                  body: facts.deliveryInformation ?? "Kupac se javlja direktno radionici.",
                   meta: "03",
                   assetId: null,
                 },
@@ -215,6 +220,23 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
             },
             assetIds: [],
             layout: { fullBleed: false, inverted: false },
+          },
+          {
+            id: "gallery-home",
+            type: "gallery",
+            variant: profile.galleryVariant,
+            visible: true,
+            animation: "fade-up",
+            content: {
+              eyebrow: "Materijal",
+              heading: "Ambijent i rad",
+              body: null,
+              ctaLabel: null,
+              ctaHref: null,
+              items: [],
+            },
+            assetIds: input.assetIds.slice(0, 6),
+            layout: { fullBleed: true, inverted: false },
           },
           {
             id: "cta-home",

@@ -18,63 +18,7 @@ export class MockAIProvider implements AIProvider {
   async extractFacts(
     input: ExtractionInput,
   ): Promise<StructuredResult<BusinessFacts>> {
-    const blob = input.sources.map((source) => source.content).join("\n");
-    const facts = normalizeFacts({
-      ...emptyBusinessFacts(),
-      businessName: input.companyName || extractField(blob, /Mlekara [A-Za-zčćžšđČĆŽŠĐ]+/) || "Mlekara Jović",
-      shortName: "Jović",
-      description:
-        "Porodična mlekara koja proizvodi kajmak, sir i jogurt od mleka sa okolnih pašnjaka.",
-      brandStory:
-        "Mlekara Jović radi kao porodična radionica. Recepti se prenose kroz generacije, a mleko stiže od lokalnih gazdinstava.",
-      productCategories: ["Mlečni proizvodi"],
-      products: [
-        {
-          name: "Kajmak",
-          description: "Domaći kajmak od punomasnog mleka.",
-          category: "Mlečni proizvodi",
-          price: 750,
-          currency: "RSD",
-          unit: "500g",
-          sourceUrl: input.sources[0]?.url ?? "https://example.com",
-        },
-        {
-          name: "Beli sir",
-          description: "Tradicionalni beli sir.",
-          category: "Mlečni proizvodi",
-          price: 890,
-          currency: "RSD",
-          unit: "kg",
-          sourceUrl: input.sources[0]?.url ?? "https://example.com",
-        },
-        {
-          name: "Jogurt 2.8%",
-          description: "Sveži jogurt od punomasnog mleka.",
-          category: "Mlečni proizvodi",
-          price: 180,
-          currency: "RSD",
-          unit: "l",
-          sourceUrl: input.sources[0]?.url ?? "https://example.com",
-        },
-      ],
-      address: "Vojvode Mišića 12",
-      city: "Ljubovija",
-      region: "Mačva",
-      phone: "+381 64 123 4567",
-      email: "kontakt@mlekara-jovic.example",
-      workingHours: "Ponedeljak–subota 07:00–18:00",
-      socialProfiles: [],
-      orderingMethods: ["Lično preuzimanje", "Porudžbina telefonom"],
-      deliveryInformation: "Dostava u okolini Loznice i Ljubovije.",
-      provenance: input.sources.map((source) => ({
-        sourceUrl: source.url,
-        excerpt: source.content.slice(0, 180),
-      })),
-      confidence: 0.82,
-      missingInformation: ["Zvanične nagrade nisu navedene na izvorima."],
-      warnings: [],
-    });
-    return { data: facts, usage: noUsage };
+    return { data: factsFromSources(input), usage: noUsage };
   }
 
   async analyzeBrand(input: DesignInput): Promise<StructuredResult<DesignProfile>> {
@@ -92,15 +36,16 @@ export class MockAIProvider implements AIProvider {
       "story-first",
       "asymmetric-product",
     ] as const;
+    const name = input.facts.businessName ?? "studio";
     const profile: DesignProfile = {
-      brandPersonality: "Topla, zemljana, zanatska i pouzdana.",
-      industry: "Prehrambena proizvodnja",
-      targetCustomer: "Porodice i restorani koji traže lokalne mlečne proizvode.",
-      visualArchetype: "Craft pastoral",
-      primaryColor: ["#3F2A1D", "#1F3A34", "#4A2C5A", "#2C3E50"][hash % 4] ?? "#3F2A1D",
-      secondaryColor: "#C4A574",
-      foregroundColor: "#1A1612",
-      backgroundColor: "#F6F1E8",
+      brandPersonality: `Samouveren, taktilan i lokalni glas za ${name}.`,
+      industry: input.facts.productCategories[0] ?? "Zanatska proizvodnja",
+      targetCustomer: "Kupci koji traže autentičan, lokalni rad umesto masovne ponude.",
+      visualArchetype: "Editorial craft",
+      primaryColor: ["#1F1A16", "#16332E", "#3B1D2A", "#1C2C4A"][hash % 4] ?? "#1F1A16",
+      secondaryColor: ["#C9A36A", "#D7C4A3", "#E2B4A0", "#8EB5C0"][hash % 4] ?? "#C9A36A",
+      foregroundColor: "#14110F",
+      backgroundColor: "#F4EFE6",
       fontPairingId: pairings[hash % pairings.length] ?? "instrument",
       spacingCharacter: "airy",
       radiusStyle: "soft",
@@ -117,17 +62,17 @@ export class MockAIProvider implements AIProvider {
         "story",
         "process",
         "gallery",
-        "delivery",
         "contact",
       ],
       clichesToAvoid: [
-        "Generic three-card grid",
+        "Generic three-card grid as the whole identity",
         "Gradient hero text",
         "Stock handshake photos",
+        "Welcome to our website",
       ],
       navigationStyle: "solid-editorial",
-      buttonStyle: "soft-rounded",
-      heroVariant: heroes[hash % heroes.length] ?? "editorial-split",
+      buttonStyle: "solid-pill",
+      heroVariant: heroes[hash % heroes.length] ?? "cinematic",
       productVariant: "editorial-grid",
       storyVariant: "magazine",
       galleryVariant: "offset-editorial",
@@ -155,8 +100,8 @@ export class MockAIProvider implements AIProvider {
       for (const section of page.sections) {
         if (section.id !== input.sectionId) continue;
         if (input.mode === "copy" || input.mode === "section") {
-          section.content.heading = `${section.content.heading ?? "Sekcija"} — nova verzija`;
-          section.content.body = `${section.content.body ?? ""} Ažurirano na osnovu proverenih činjenica.`.trim();
+          section.content.heading = section.content.heading;
+          section.content.body = section.content.body;
         }
         if (input.mode === "design" || input.mode === "section") {
           section.variant = rotateVariant(section.type, section.variant);
@@ -167,14 +112,100 @@ export class MockAIProvider implements AIProvider {
   }
 }
 
-function extractField(blob: string, pattern: RegExp): string | null {
-  return blob.match(pattern)?.[0] ?? null;
+export function factsFromSources(input: ExtractionInput): BusinessFacts {
+  const blob = input.sources.map((source) => source.content).join("\n");
+  const sourceUrl = input.sources[0]?.url ?? "https://example.com";
+  const hostName = hostToName(sourceUrl);
+  const name = input.companyName?.trim() || firstMeaningfulLine(blob) || hostName;
+  const email = blob.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ?? null;
+  const phone = blob.match(/\+?\d[\d\s/().-]{7,}\d/)?.[0]?.trim() ?? null;
+  const city = matchAfter(blob, /(?:grad|mesto|sedište)[:\s]+([A-ZČĆŽŠĐ][\wčćžšđČĆŽŠĐ-]+)/i);
+  const products = extractProducts(blob, sourceUrl);
+  const description =
+    firstParagraph(blob) ||
+    `${name} je lokalna radionica. Sadržaj sajta je složen samo iz javnih izvora.`;
+
+  return normalizeFacts({
+    ...emptyBusinessFacts(),
+    businessName: name,
+    shortName: name.split(/\s+/)[0] ?? name,
+    description,
+    brandStory: firstParagraph(blob) || description,
+    productCategories: products[0]?.category ? [products[0].category] : [],
+    products,
+    city,
+    phone,
+    email,
+    workingHours: matchLine(blob, /radno vreme|ponedeljak|subota|nedelja/i),
+    orderingMethods: ["Lično preuzimanje", "Porudžbina telefonom"].filter(Boolean),
+    deliveryInformation: matchLine(blob, /dostav/i),
+    provenance: input.sources.map((source) => ({
+      sourceUrl: source.url,
+      excerpt: source.content.slice(0, 180),
+    })),
+    confidence: blob.length > 200 ? 0.7 : 0.4,
+    missingInformation: [
+      products.length === 0 ? "Proizvodi nisu jasno navedeni na izvorima." : "",
+    ].filter(Boolean),
+    warnings: [],
+  });
+}
+
+function hostToName(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").split(".")[0] ?? "Studio";
+  } catch {
+    return "Studio";
+  }
+}
+
+function firstMeaningfulLine(blob: string) {
+  return (
+    blob
+      .split("\n")
+      .map((line) => line.replace(/^#+\s*/, "").trim())
+      .find((line) => line.length > 3 && line.length < 80) ?? null
+  );
+}
+
+function firstParagraph(blob: string) {
+  const text = blob.replace(/\s+/g, " ").trim();
+  if (text.length < 40) return null;
+  return text.slice(0, 280).replace(/\s+\S*$/, "");
+}
+
+function matchAfter(blob: string, pattern: RegExp) {
+  return blob.match(pattern)?.[1]?.trim() ?? null;
+}
+
+function matchLine(blob: string, pattern: RegExp) {
+  return blob.split("\n").find((line) => pattern.test(line))?.trim() ?? null;
+}
+
+function extractProducts(blob: string, sourceUrl: string) {
+  const lines = blob.split("\n").map((line) => line.trim()).filter(Boolean);
+  const products = [];
+  for (const line of lines) {
+    const price = line.match(/(\d+[.,]?\d*)\s*(RSD|EUR|€)/i);
+    if (!price) continue;
+    const name = line.replace(price[0], "").replace(/[-–—:|]/g, " ").trim();
+    if (name.length < 2 || name.length > 80) continue;
+    products.push({
+      name,
+      description: null,
+      category: null,
+      price: Number(price[1].replace(",", ".")),
+      currency: price[2].toUpperCase() === "€" ? "EUR" : price[2].toUpperCase(),
+      unit: null,
+      sourceUrl,
+    });
+    if (products.length >= 6) break;
+  }
+  return products;
 }
 
 function hashCode(value: string): number {
-  return Math.abs(
-    [...value].reduce((acc, char) => acc + char.charCodeAt(0), 0),
-  );
+  return Math.abs([...value].reduce((acc, char) => acc + char.charCodeAt(0), 0));
 }
 
 function rotateVariant(type: string, current: string): string {

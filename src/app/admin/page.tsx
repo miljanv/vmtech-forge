@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AnimatedNumber } from "@/components/admin/animated-number";
 import { PipelineChart } from "@/components/admin/pipeline-chart";
-import { formatDealValue, SALES_STATUS_LABELS } from "@/lib/sales/status";
+import { SALES_STATUS_LABELS } from "@/lib/sales/status";
 import { getDashboardData } from "@/server/services/analytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,29 +63,17 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Vrednost</CardTitle>
+            <CardTitle>Konverzije</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Ostvarena vrednost</p>
-              <p className="font-heading text-2xl">
-                {formatDealValue(data.totals.wonValue)}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Vrednost procesa</p>
-              <p className="font-heading text-2xl">
-                {formatDealValue(data.totals.pipelineValue)}
-              </p>
-            </div>
             <div className="flex gap-6">
               <div>
                 <p className="text-muted-foreground">Odgovori</p>
-                <p className="text-xl">{data.totals.replyRate}%</p>
+                <p className="font-heading text-2xl">{data.totals.replyRate}%</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Uspešne prodaje</p>
-                <p className="text-xl">{data.totals.winRate}%</p>
+                <p className="font-heading text-2xl">{data.totals.winRate}%</p>
               </div>
             </div>
           </CardContent>

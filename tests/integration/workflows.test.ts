@@ -100,15 +100,13 @@ describe("sales status updates", () => {
 });
 
 describe("email draft creation", () => {
-  it("includes the preview URL and 120 EUR offer", () => {
+  it("includes the preview URL", () => {
     const draft = buildSalesEmail({
       companyName: "Mlekara Jović",
       previewUrl: "https://my-domain.com/mlekara-jovic",
-      dealValueMinor: 12000,
-      currency: "EUR",
     });
     expect(draft.subject).toContain("Mlekara Jović");
     expect(draft.body).toContain("https://my-domain.com/mlekara-jovic");
-    expect(draft.body).toContain("120");
+    expect(draft.body).not.toContain("120");
   });
 });

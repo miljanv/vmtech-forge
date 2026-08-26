@@ -1,6 +1,7 @@
 import { prisma, hasDatabase } from "@/server/db";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { formatGenerationCost } from "@/lib/ai/pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,8 @@ export default async function GenerationsPage() {
                 <Badge>{job.status}</Badge>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {job.progress}% · {job.currentStep} · tokeni {job.inputTokens}/{job.outputTokens}
+                {job.progress}% · {job.currentStep} · {job.inputTokens}/{job.outputTokens} tokena ·{" "}
+                {formatGenerationCost(job.inputTokens, job.outputTokens)}
               </p>
             </Link>
           ))}
