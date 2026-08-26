@@ -28,7 +28,11 @@ export default async function SettingsPage() {
             : "nije podešen — koristi se mock, dashboard ostaje na 0 requestova"}
         </p>
         <p>Trigger.dev: {env.triggerEnabled ? "povezan" : "nije podešen"}</p>
-        <p>R2: {env.r2Enabled ? "povezan" : "lokalni storage"}</p>
+        <p>
+          R2: {env.r2Enabled ? "povezan" : "lokalni storage"} — slike se serviraju
+          preko /media. Lokalni disk na Vercel-u nestaje posle deploya, zato je R2
+          potreban da fajlovi ostanu.
+        </p>
         {env.openaiEnabled && !env.triggerEnabled ? (
           <p className="mt-3 text-foreground">
             Generisanje trenutno ide preko Vercel funkcije. Ako crawl potroši limit,

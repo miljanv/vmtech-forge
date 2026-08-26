@@ -1,4 +1,5 @@
 import type { SiteSpec } from "@/lib/site-spec/schema";
+import { publicAssetUrl } from "@/lib/assets/public-url";
 import { SiteChrome } from "@/components/site-renderer/site-chrome";
 import { SectionView } from "@/components/site-sections/section-view";
 import { JsonLd } from "@/components/site-renderer/json-ld";
@@ -9,16 +10,6 @@ type SiteAsset = {
   type: string;
   storageKey?: string | null;
 };
-
-function resolveAssetUrl(asset: SiteAsset) {
-  if (/localhost|127\.0\.0\.1/.test(asset.publicUrl)) {
-    return "";
-  }
-  if (asset.publicUrl.startsWith("http") || asset.publicUrl.startsWith("/")) {
-    return asset.publicUrl;
-  }
-  return asset.storageKey ? `/media/${asset.storageKey}` : asset.publicUrl;
-}
 
 export function SiteRenderer({
   spec,
@@ -80,7 +71,7 @@ export function SitePageView({
 }) {
   const page = spec.pages.find((item) => item.path === path) ?? spec.pages[0];
   const assetMap = new Map(
-    assets.map((asset) => [asset.id, resolveAssetUrl(asset)]),
+    assets.map((asset) => [asset.id, publicAssetUrl(asset)]),
   );
   const theme = spec.theme;
 

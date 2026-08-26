@@ -21,6 +21,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SiteEditor } from "@/components/admin/site-editor";
 import { formatGenerationCost } from "@/lib/ai/pricing";
+import { publicAssetUrl } from "@/lib/assets/public-url";
 import type { SiteSpec } from "@/lib/site-spec/schema";
 
 type CompanyDetail = {
@@ -39,7 +40,13 @@ type CompanyDetail = {
   nextFollowUpAt: string | null;
   sources: Array<{ id: string; url: string; crawlStatus: string; pageTitle: string | null }>;
   facts: Array<{ id: string; key: string; value: unknown; sourceUrl: string | null }>;
-  assets: Array<{ id: string; publicUrl: string; type: string; approved: boolean }>;
+  assets: Array<{
+    id: string;
+    publicUrl: string;
+    storageKey?: string | null;
+    type: string;
+    approved: boolean;
+  }>;
   site: {
     id: string;
     demoMode: boolean;
@@ -198,7 +205,12 @@ export function CompanyDetail({ company }: { company: CompanyDetail }) {
         <TabsContent value="materijali" className="grid gap-3 pt-4 sm:grid-cols-3">
           {company.assets.map((asset) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={asset.id} src={asset.publicUrl} alt={asset.type} className="rounded-xl border object-cover" />
+            <img
+              key={asset.id}
+              src={publicAssetUrl(asset)}
+              alt={asset.type}
+              className="rounded-xl border object-cover"
+            />
           ))}
         </TabsContent>
 

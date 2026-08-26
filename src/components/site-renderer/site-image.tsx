@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export function SiteImage({
@@ -16,6 +16,15 @@ export function SiteImage({
 }) {
   const usable = Boolean(src) && !isUnusableSrc(src);
   const [failed, setFailed] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  useLayoutEffect(() => {
+    setFailed(false);
+    const image = imageRef.current;
+    if (image?.complete && image.naturalWidth === 0) {
+      setFailed(true);
+    }
+  }, [src]);
 
   if (!usable || failed) {
     return <VisualFallback seed={seed ?? alt} className={className} label={alt} />;
@@ -24,6 +33,7 @@ export function SiteImage({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={imageRef}
       src={src!}
       alt={alt}
       className={cn("bg-[var(--site-muted)] object-cover", className)}

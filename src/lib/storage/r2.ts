@@ -1,6 +1,10 @@
-import { PutObjectCommand, DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getEnv } from "@/lib/env";
-import type { StorageProvider, StoredObject } from "@/lib/storage/types";
+import type { StorageProvider, StoredObject, StoredObjectBody } from "@/lib/storage/types";
+
+function mediaUrl(key: string) {
+  return `/media/${key.replace(/^\/+/, "")}`;
+}
 
 export class R2StorageProvider implements StorageProvider {
   readonly name = "r2" as const;
@@ -32,12 +36,31 @@ export class R2StorageProvider implements StorageProvider {
         ContentType: options.contentType,
       }),
     );
-    const base = (env.R2_PUBLIC_BASE_URL ?? "").replace(/\/$/, "");
     return {
       key: options.key,
-      publicUrl: `${base}/${options.key}`,
+      publicUrl: mediaUrl(options.key),
       size: options.body.byteLength,
     };
+  }
+
+  async get(key: string): Promise<StoredObjectBody | null> {
+    const env = getEnv();
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({
+          Bucket: env.R2_BUCKET_NAME,
+          Key: key,
+        }),
+      );
+      const bytes = await response.Body?.transformToByteArray();
+      if (!bytes) return null;
+      return {
+        body: Buffer.from(bytes),
+        contentType: response.ContentType ?? (key.endsWith(".webp") ? "image/webp" : "application/octet-stream"),
+      };
+    } catch {
+      return null;
+    }
   }
 
   async delete(key: string): Promise<void> {

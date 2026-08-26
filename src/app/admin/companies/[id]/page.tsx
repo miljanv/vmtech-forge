@@ -58,6 +58,7 @@ export default async function CompanyPage({
           assets: company.assets.map((asset) => ({
             id: asset.id,
             publicUrl: asset.publicUrl,
+            storageKey: asset.storageKey,
             type: asset.type,
             approved: asset.approved,
           })),

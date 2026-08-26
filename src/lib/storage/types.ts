@@ -4,6 +4,11 @@ export type StoredObject = {
   size: number;
 };
 
+export type StoredObjectBody = {
+  body: Buffer;
+  contentType: string;
+};
+
 export interface StorageProvider {
   readonly name: "r2" | "local";
   put(options: {
@@ -11,5 +16,6 @@ export interface StorageProvider {
     body: Buffer;
     contentType: string;
   }): Promise<StoredObject>;
+  get(key: string): Promise<StoredObjectBody | null>;
   delete(key: string): Promise<void>;
 }
