@@ -67,7 +67,7 @@ export class MockAIProvider implements AIProvider {
       ],
       navigationStyle: "transparent-overlay",
       buttonStyle: "solid-pill",
-      heroVariant: "cinematic",
+      heroVariant: "editorial-split",
       productVariant: "editorial-grid",
       storyVariant: "magazine",
       galleryVariant: "full-carousel",

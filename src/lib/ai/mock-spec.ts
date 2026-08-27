@@ -114,7 +114,7 @@ export function buildMockSiteSpec(input: SitePlanInput): SiteSpec {
           {
             id: "hero-home",
             type: "hero",
-            variant: "cinematic",
+            variant: "editorial-split",
             visible: true,
             animation: "fade-up",
             content: {

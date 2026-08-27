@@ -24,33 +24,38 @@ export function GalleryFilmstrip({
 
   return (
     <section className="py-20 md:py-28">
-      <div className="mx-auto max-w-6xl px-4">
-        <h2 className="font-heading text-4xl md:text-6xl">{heading}</h2>
+      <div className="mx-auto max-w-[1200px] px-5 md:px-10">
+        <p className="flex items-center gap-3 text-[11px] tracking-[0.36em] text-[var(--site-muted-fg)] uppercase">
+          <span className="h-px w-8 bg-[var(--site-border)]" />
+          Atelje
+        </p>
+        <h2 className="font-heading mt-5 text-4xl md:text-6xl">{heading}</h2>
       </div>
-      <div className="relative mt-10 overflow-hidden">
+      <div className="relative mt-12 overflow-hidden">
         <div
           className="flex transition-transform duration-700 ease-out"
-          style={{ transform: `translateX(-${index * 72}%)` }}
+          style={{ transform: `translateX(-${index * 68}%)` }}
         >
           {slides.map((src, slideIndex) => (
-            <div key={`${src}-${slideIndex}`} className="w-[72%] shrink-0 px-2 md:px-4">
+            <div key={`${src}-${slideIndex}`} className="w-[86%] shrink-0 px-3 md:w-[68%] md:px-5">
               <SiteImage
                 src={images[slideIndex]}
                 alt=""
                 seed={`${heading}-${slideIndex}`}
-                className="aspect-[16/10] w-full rounded-[calc(var(--site-radius)+1.25rem)]"
+                className="aspect-[16/10] w-full rounded-[1.8rem] md:rounded-[2.2rem]"
               />
             </div>
           ))}
         </div>
-        <div className="mx-auto mt-8 flex max-w-6xl justify-end gap-2 px-4">
+        <div className="mx-auto mt-8 flex max-w-[1200px] items-center justify-end gap-3 px-5 md:px-10">
           {slides.map((src, slideIndex) => (
             <button
               key={`gdot-${src}-${slideIndex}`}
               type="button"
+              aria-label={`Galerija ${slideIndex + 1}`}
               className={cn(
-                "h-1.5 rounded-full",
-                slideIndex === index ? "w-8 bg-[var(--site-primary)]" : "w-3 bg-[var(--site-border)]",
+                "h-px transition-all",
+                slideIndex === index ? "w-12 bg-[var(--site-fg)]" : "w-6 bg-[var(--site-fg)]/25",
               )}
               onClick={() => setIndex(slideIndex)}
             />

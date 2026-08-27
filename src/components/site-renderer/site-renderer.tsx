@@ -113,9 +113,18 @@ export function SitePageView({
         <main>
           {page.sections
             .filter((section) => section.visible)
-            .map((section) => (
+            .map((section, index) => (
               <div key={section.id}>
-                <Reveal id={section.id} animation={section.animation ?? "fade-up"}>
+                <Reveal
+                  id={section.id}
+                  animation={
+                    index === 0 || section.type === "hero"
+                      ? "none"
+                      : section.animation === "reveal"
+                        ? "fade-up"
+                        : (section.animation ?? "fade-up")
+                  }
+                >
                   <SectionView section={section} assetMap={assetMap} slug={slug} />
                 </Reveal>
                 {section.type === "hero" ? <ProductMarquee names={productNames} /> : null}
